@@ -52,3 +52,5 @@ typedef struct NBT_Error {
 NBT* NBT_Parse(uint8_t* data, int length);
 NBT* NBT_Parse_Opt(uint8_t* data, int length, NBT_Error* err);
 void NBT_Free(NBT* root);
+int  NBT_toSNBT(NBT* root, char* buff, int bufflen);
+int  NBT_toSNBT_Opt(NBT* root, char* buff, int bufflen, int maxlevel, int space, NBT_Error* errid);
