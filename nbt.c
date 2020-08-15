@@ -19,7 +19,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <byteswap.h>
+#include <zlib.h>
 
 typedef struct NBT_Buffer {
     uint8_t* data;
@@ -42,13 +42,6 @@ typedef struct NBT_Buffer {
 #else
 #include <byteswap.h>
 #endif
-
-#define ERROR_MASK 0xf0000000
-#define ERROR_INTERNAL          ERROR_MASK|0x1 
-#define ERROR_EARLY_EOF         ERROR_MASK|0x2 
-#define ERROR_LEFTOVER_DATA     ERROR_MASK|0x3 
-#define ERROR_INVALID_DATA      ERROR_MASK|0x4
-#define ERROR_BUFFER_OVERFLOW   ERROR_MASK|0x5
 
 #define CHECK_WRITELEN(writelen, maxlen, buffer, tempbuf) { \
         (buffer)->pos += (writelen);                        \
@@ -100,7 +93,6 @@ NBT_Buffer* init_buffer(uint8_t* data, int length) {
     buffer->pos = 0;
     return buffer;
 }
-
 
 int getUint8(NBT_Buffer* buffer, uint8_t* result) {
     if (buffer->pos + 1 > buffer->len) {
@@ -647,6 +639,26 @@ void fill_err(NBT_Error* err, int errid, int position) {
     err->position = position;
 }
 
+int decompress (uint8_t* dest, size_t* destsize, uint8_t* src, size_t srcsize) {
+    z_stream strm;
+    strm.zalloc = Z_NULL;
+    strm.zfree = Z_NULL;
+    strm.opaque = Z_NULL;
+    strm.next_in = src;
+    strm.avail_in = srcsize;
+    strm.next_out = dest;
+    strm.avail_out = *destsize;
+    if (inflateInit2 (&strm, 15 | 32) < 0){
+        return -1; 
+    }   
+    if (inflate (&strm, Z_NO_FLUSH) < 0){
+        return -1; 
+    }   
+    inflateEnd (&strm);
+    *destsize -= strm.avail_out;
+    return Z_OK;
+}
+
 int NBT_toSNBT_Opt(NBT* root, char* buff, int bufflen, int maxlevel, int space, NBT_Error* errid) {
     NBT_Buffer buffer;
     buffer.data = (uint8_t*)buff;
@@ -666,9 +678,30 @@ int NBT_toSNBT(NBT* root, char* buff, int bufflen) {
 }
 
 NBT* NBT_Parse_Opt(uint8_t* data, int length, NBT_Error* errid) {
-    NBT_Buffer* buffer = init_buffer(data, length);
+
+    NBT_Buffer* buffer;
+
+    // check if gzipped 
+    if (length > 1 && data[0] == 0x1f && data[1] == 0x8b) {
+        size_t size = length * 20;
+        uint8_t* undata = malloc(size);
+        int ret = decompress(undata, &size, data, length);
+        if (ret != Z_OK) {
+            fill_err(errid, ERROR_INVALID_DATA, 0);
+            free(undata);
+            return NULL;
+        }
+        buffer = init_buffer(undata, size);
+    } else {
+        buffer = init_buffer(data, length);
+    }
+
     NBT* root = create_NBT(TAG_End);
     int ret = parse_value(root, buffer, 0);
+    if (buffer->data != data) {
+        free(buffer->data);
+    }
+
     if (ret != 0) {
         fill_err(errid, ret, buffer->pos);
         NBT_Free(root);

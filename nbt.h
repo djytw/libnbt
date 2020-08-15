@@ -39,10 +39,11 @@ typedef struct NBT {
 } NBT;
 
 #define ERROR_MASK 0xf0000000
-#define ERROR_INTERNAL          ERROR_MASK|0x1 
-#define ERROR_EARLY_EOF         ERROR_MASK|0x2 
-#define ERROR_LEFTOVER_DATA     ERROR_MASK|0x3 
-#define ERROR_INVALID_DATA      ERROR_MASK|0x4
+#define ERROR_INTERNAL          (ERROR_MASK|0x1) 
+#define ERROR_EARLY_EOF         (ERROR_MASK|0x2) 
+#define ERROR_LEFTOVER_DATA     (ERROR_MASK|0x3) 
+#define ERROR_INVALID_DATA      (ERROR_MASK|0x4)
+#define ERROR_BUFFER_OVERFLOW   (ERROR_MASK|0x5)
 
 typedef struct NBT_Error {
     int errid;

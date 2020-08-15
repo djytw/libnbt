@@ -1,4 +1,4 @@
-/*  basic.c: basic usage of libnbt, including parsing an NBT file and translate to SNBT
+/*  basic_opt.c: basic usage of libnbt options, including parsing an NBT file and translate to SNBT
     Not copyrighted, provided to the public domain
     This file is part of the libnbt library
 */
@@ -10,9 +10,17 @@
 int main(int argc, char** argv) {
 
     // Get parameters
+    int maxlevel = -1;
+    int space = -1;
     if (argc < 2) {
-        printf("Usage: %s <nbtfile>\n", argv[0]);
+        printf("Usage: %s <nbtfile> [maxlevel] [space]\n", argv[0]);
         return -1;
+    }
+    if (argc > 2) {
+        maxlevel = atoi(argv[2]);
+    }
+    if (argc > 3) {
+        space = atoi(argv[3]);
     }
     FILE* fp = fopen(argv[1], "r");
     if (fp == NULL) {
@@ -28,16 +36,20 @@ int main(int argc, char** argv) {
     fread(data, 1, size, fp);
     fclose(fp);
 
-    // Note this is the simplified version without any error handle
-    NBT* root = NBT_Parse(data, size);
-    if (root) {
+    // Parse nbt, and get any errors
+    NBT_Error error;
+    NBT* root = NBT_Parse_Opt(data, size, &error);
+    if (error.errid == 0) {
         printf("NBT parse OK!\n");
 
         int bufferlength = 100000;
         char* output = malloc(bufferlength);
         
-        int readlen = NBT_toSNBT(root, output, bufferlength);
+        int readlen = NBT_toSNBT_Opt(root, output, bufferlength, maxlevel, space, &error);
         printf("%s\nLength=%d\n", output, readlen);
+        if (error.errid == ERROR_BUFFER_OVERFLOW) {
+            printf("buffer not enough!\n");
+        }
 
         free(output);
 
