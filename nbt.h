@@ -18,6 +18,10 @@
 #pragma once
 #include <stdint.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef enum NBT_Tags {
     TAG_End, TAG_Byte, TAG_Short, TAG_Int, TAG_Long, TAG_Float, TAG_Double, TAG_Byte_Array, TAG_String, TAG_List, TAG_Compound, TAG_Int_Array, TAG_Long_Array
 } NBT_Tags;
@@ -55,3 +59,7 @@ NBT* NBT_Parse_Opt(uint8_t* data, int length, NBT_Error* err);
 void NBT_Free(NBT* root);
 int  NBT_toSNBT(NBT* root, char* buff, int bufflen);
 int  NBT_toSNBT_Opt(NBT* root, char* buff, int bufflen, int maxlevel, int space, NBT_Error* errid);
+
+#ifdef __cplusplus
+}
+#endif

@@ -8,6 +8,6 @@ CC = gcc
 
 all : $(objects)
 
-$(objects) : $(TARGETDIR)% : %.c
+$(objects) : $(TARGETDIR)% : %.c ../nbt.c
 	@mkdir -p $(TARGETDIR)
 	$(CC) $< ../nbt.c -o $@ $(CFLAGS) $(patsubst %,-l%,$(LIBS)) -I..

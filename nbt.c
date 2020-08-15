@@ -75,6 +75,7 @@ int snbt_write_string(NBT_Buffer* buffer, char* value, int length, char* key);
 int snbt_write_compound(NBT_Buffer* buffer, NBT* root, int level, int space, int curlevel, int isarray);
 int snbt_write_nbt(NBT_Buffer* buffer, NBT* root, int level, int space, int curlevel);
 void fill_err(NBT_Error* err, int errid, int position);
+int decompress(uint8_t* dest, size_t* destsize, uint8_t* src, size_t srcsize);
 
 NBT* create_NBT(uint8_t type) {
     NBT* root = malloc(sizeof(NBT));
@@ -639,7 +640,7 @@ void fill_err(NBT_Error* err, int errid, int position) {
     err->position = position;
 }
 
-int decompress (uint8_t* dest, size_t* destsize, uint8_t* src, size_t srcsize) {
+int decompress(uint8_t* dest, size_t* destsize, uint8_t* src, size_t srcsize) {
     z_stream strm;
     strm.zalloc = Z_NULL;
     strm.zfree = Z_NULL;
