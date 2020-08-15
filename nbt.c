@@ -1,4 +1,4 @@
-/*  libnbt - A nbt/mca file parser in C
+/*  libnbt - Minecraft NBT/MCA/SNBT file parser in C
     Copyright (C) 2020 djytw
     
     This program is free software: you can redistribute it and/or modify
@@ -16,6 +16,7 @@
 
 #include "nbt.h"
 
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -678,17 +679,56 @@ int NBT_toSNBT(NBT* root, char* buff, int bufflen) {
     return NBT_toSNBT_Opt(root, buff, bufflen, -1, -1, NULL);
 }
 
+NBT* NBT_GetChild(NBT* root, const char* key) {
+    if (root->type != TAG_Compound || root->child == NULL) {
+        return NULL;
+    }
+    NBT* child = root->child;
+    while(child) {
+        if (!strcmp(child->key, key)) {
+            return child;
+        }
+        child = child->next;
+    }
+    return NULL;
+}
+
+NBT* NBT_GetChild_Deep(NBT* root, ...) {
+    va_list va;
+    va_start(va, root);
+    char* temp;
+    NBT* current = root;
+    while ((temp = va_arg(va, char*)) != NULL) {
+        current = NBT_GetChild(current, temp);
+        if (current == NULL) {
+            return NULL;
+        }
+    }
+    return current;
+}
+
 NBT* NBT_Parse_Opt(uint8_t* data, int length, NBT_Error* errid) {
 
     NBT_Buffer* buffer;
 
-    // check if gzipped 
     if (length > 1 && data[0] == 0x1f && data[1] == 0x8b) {
-        size_t size = length * 20;
+        // file is gzip
+        size_t size = length * 100;
         uint8_t* undata = malloc(size);
         int ret = decompress(undata, &size, data, length);
         if (ret != Z_OK) {
-            fill_err(errid, ERROR_INVALID_DATA, 0);
+            fill_err(errid, ERROR_UNZIP_ERROR, 0);
+            free(undata);
+            return NULL;
+        }
+        buffer = init_buffer(undata, size);
+    } else if (data[0] == 0x78) {
+        // file is zlib
+        size_t size = length * 100;
+        uint8_t* undata = malloc(size);
+        int ret = uncompress(undata, &size, data, length);
+        if (ret != Z_OK) {
+            fill_err(errid, ERROR_UNZIP_ERROR, 0);
             free(undata);
             return NULL;
         }
@@ -753,4 +793,77 @@ void NBT_Free(NBT* root) {
         root->next = NULL;
     }
     free(root);
+}
+
+int MCA_ExtractFile(FILE* fp, uint8_t** dest, uint32_t* destsize, int skip_chunk_error) {
+
+    memset(dest, 0, sizeof(uint8_t*) * CHUNKS_IN_REGION);
+    memset(destsize, 0, sizeof(uint32_t) * CHUNKS_IN_REGION);
+
+    if (fp == NULL) {
+        return ERROR_INVALID_DATA;
+    }
+    fseek(fp, 0, SEEK_END);
+    int size = ftell(fp);
+    if (size <= 8192) {
+        return ERROR_INVALID_DATA;
+    }
+    fseek(fp, 0, SEEK_SET);
+
+    uint64_t offsets[CHUNKS_IN_REGION];
+
+    int j;
+    for (j = 0; j < CHUNKS_IN_REGION; j ++) {
+        uint64_t t = fgetc(fp) << 16;
+        t |= fgetc(fp) << 8;
+        t |= fgetc(fp);
+        offsets[j] = t << 12;
+        uint64_t tsize = (fgetc(fp) << 12) + offsets[j];
+        if (tsize > size) {
+            if (skip_chunk_error) {
+                offsets[j] = 0;
+            } else {
+                return ERROR_INVALID_DATA;
+            }
+        }
+    }
+
+    for (j = 0; j < CHUNKS_IN_REGION; j ++) {
+
+        if (offsets[j] == 0) {
+            continue;
+        }
+
+        fseek(fp, offsets[j], SEEK_SET);
+        uint32_t tsize = fgetc(fp) << 24;
+        tsize |= fgetc(fp) << 16;
+        tsize |= fgetc(fp) << 8;
+        tsize |= fgetc(fp);
+
+        uint8_t type = fgetc(fp);
+        if (type != 2 && !skip_chunk_error) {
+            int i;
+            for (i = 0; i < j; i ++) {
+                if (dest[i]) {
+                    free(dest[i]);
+                }
+            }
+            return ERROR_INVALID_DATA;
+        }
+        
+        dest[j] = malloc(tsize - 1);
+        destsize[j] = tsize - 1;
+        int readSize = fread(dest[j], 1, destsize[j], fp);
+
+        if (readSize != tsize - 1 && !skip_chunk_error) {
+            int i;
+            for (i = 0; i <= j; i ++) {
+                if (dest[i]) {
+                    free(dest[i]);
+                }
+            }
+            return ERROR_INVALID_DATA;
+        }
+    }
+    return 0;
 }

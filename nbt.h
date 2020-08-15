@@ -1,4 +1,4 @@
-/*  libnbt - A nbt/mca file parser in C
+/*  libnbt - Minecraft NBT/MCA/SNBT file parser in C
     Copyright (C) 2020 djytw
     
     This program is free software: you can redistribute it and/or modify
@@ -16,6 +16,7 @@
 
 
 #pragma once
+#include <stdio.h>
 #include <stdint.h>
 
 #ifdef __cplusplus
@@ -48,17 +49,24 @@ typedef struct NBT {
 #define ERROR_LEFTOVER_DATA     (ERROR_MASK|0x3) 
 #define ERROR_INVALID_DATA      (ERROR_MASK|0x4)
 #define ERROR_BUFFER_OVERFLOW   (ERROR_MASK|0x5)
+#define ERROR_UNZIP_ERROR       (ERROR_MASK|0x6)
+
+#define CHUNKS_IN_REGION 1024
 
 typedef struct NBT_Error {
     int errid;
     int position;
 } NBT_Error;
 
-NBT* NBT_Parse(uint8_t* data, int length);
-NBT* NBT_Parse_Opt(uint8_t* data, int length, NBT_Error* err);
-void NBT_Free(NBT* root);
-int  NBT_toSNBT(NBT* root, char* buff, int bufflen);
-int  NBT_toSNBT_Opt(NBT* root, char* buff, int bufflen, int maxlevel, int space, NBT_Error* errid);
+NBT*  NBT_Parse(uint8_t* data, int length);
+NBT*  NBT_Parse_Opt(uint8_t* data, int length, NBT_Error* err);
+void  NBT_Free(NBT* root);
+NBT*  NBT_GetChild(NBT* root, const char* key);
+NBT*  NBT_GetChild_Deep(NBT* root, ...);
+int   NBT_toSNBT(NBT* root, char* buff, int bufflen);
+int   NBT_toSNBT_Opt(NBT* root, char* buff, int bufflen, int maxlevel, int space, NBT_Error* errid);
+int   MCA_Extract(uint8_t* data, int length, uint8_t** dest, uint32_t* destsize, int skip_chunk_error);
+int   MCA_ExtractFile(FILE* fp, uint8_t** dest, uint32_t* destsize, int skip_chunk_error);
 
 #ifdef __cplusplus
 }
