@@ -40,6 +40,7 @@ int main(int argc, char** argv) {
     // int ret = MCA_ReadRaw(buffer, size, mca, 1);
 
     if (ret != 0) {
+        MCA_Free(mca);
         printf("Read MCA file failed!\n");
         return -3;
     }

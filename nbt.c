@@ -20,6 +20,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include <zlib.h>
 
 typedef struct NBT_Buffer {
@@ -982,4 +983,45 @@ chunk_error: {
     }
     return ERROR_INVALID_DATA;
     }
+}
+
+int MCA_WriteRaw_File(FILE* fp, MCA* mca) {
+    if (mca == NULL || fp == NULL) {
+        return ERROR_INVALID_DATA;
+    }
+    int current = 2;
+    uint32_t offsets[1024];
+    int i;
+    for (i = 0; i < CHUNKS_IN_REGION; i ++) {
+        if (mca->rawdata[i] == NULL) {
+            offsets[i] = 0;
+            continue;
+        }
+        fseek(fp, current << 12, SEEK_SET);
+        offsets[i] = current << 8;
+        uint32_t size = mca->size[i] + 1;
+        fputc((size >> 24) & 0xff, fp);
+        fputc((size >> 16) & 0xff, fp);
+        fputc((size >> 8) & 0xff, fp);
+        fputc(size & 0xff, fp);
+        fputc(2, fp);
+        fwrite(mca->rawdata[i], 1, size - 1, fp);
+        int newpos = (ftell(fp) >> 12) + 1;
+        offsets[i] |= (newpos - current) & 0xff;
+        current = newpos;
+    }
+    fseek(fp, 0, SEEK_SET);
+    for (i = 0; i < CHUNKS_IN_REGION; i ++) {
+        fputc((offsets[i] >> 24) & 0xff, fp);
+        fputc((offsets[i] >> 16) & 0xff, fp);
+        fputc((offsets[i] >> 8) & 0xff, fp);
+        fputc(offsets[i] & 0xff, fp);
+    }
+    uint32_t t = bswap_32(time(NULL));
+    uint8_t* tbuf = (uint8_t*)&t;
+    for (i = 0; i < CHUNKS_IN_REGION; i ++) {
+        fwrite(tbuf, 4, 1, fp);
+    }
+    fflush(fp);
+    return 0;
 }

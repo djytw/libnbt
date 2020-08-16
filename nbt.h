@@ -78,6 +78,7 @@ MCA*  MCA_Init(char* filename);
 MCA*  MCA_Init_WithPos(int x, int z);
 int   MCA_ReadRaw(uint8_t* data, int length, MCA* mca, int skip_chunk_error);
 int   MCA_ReadRaw_File(FILE* fp, MCA* mca, int skip_chunk_error);
+int   MCA_WriteRaw_File(FILE* fp, MCA* mca);
 int   MCA_Parse(MCA* mca);
 void  MCA_Free(MCA* mca);
 
