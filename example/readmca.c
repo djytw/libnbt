@@ -21,57 +21,62 @@ int main(int argc, char** argv) {
         return -2;
     }
 
-    int regionx, regionz, ret;
-    char* str = strrchr(argv[1], '/');
-    if (str == NULL) str = argv[1];
-    else str++;
-    ret = sscanf(str, "r.%d.%d.mca", &regionx, &regionz);
-    if (ret != 2) {
-        printf("Not standard mca file name, skip chunk position checks.\n");
+    // Initialize MCA structure with filename. This will detect region location from filename.
+    MCA* mca = MCA_Init(argv[1]);
+    if (mca->hasPosition) {
+        printf("File: chunk%d,%d ~ chunk%d,%d\n", mca->x*32, mca->z*32, mca->x*32+31, mca->z*32+31);
     } else {
-        printf("File: %s: chunk%d,%d ~ chunk%d,%d\n", str, regionx*32, regionz*32, regionx*32+31, regionz*32+31);
+        printf("Not standard mca file name, skip chunk position checks.\n");
     }
-    
-    uint8_t* data[CHUNKS_IN_REGION];
-    uint32_t length[CHUNKS_IN_REGION];
-    ret = MCA_ExtractFile(fp, data, length, 0);
+
+    // Read raw chunk data from file
+    int ret = MCA_ReadRaw_File(fp, mca, 1);
+    // // another approach can be done with buffer:
+    // fseek(fp, 0, SEEK_END);
+    // int size = ftell(fp);
+    // fseek(fp, 0, SEEK_SET);
+    // uint8_t* buffer = malloc(size);
+    // fread(buffer, 1, size, fp);
+    // int ret = MCA_ReadRaw(buffer, size, mca, 1);
 
     if (ret != 0) {
         printf("Read MCA file failed!\n");
         return -3;
     }
 
-    int i, success = 0, errcount = 0, emptycount = 0;
-    NBT_Error error;
+    // Parse raw data to NBT structure
+    int errcount = MCA_Parse(mca);
+
+    int i;
+    int emptycount = -errcount;
+    int successcount = 0;
     for (i = 0; i < CHUNKS_IN_REGION; i ++) {
-        if (data[i] != NULL) {
-            NBT* nbt = NBT_Parse_Opt(data[i], length[i], &error);
-            if (nbt) {
-                NBT* xPos = NBT_GetChild_Deep(nbt, "Level", "xPos", NULL);
-                NBT* zPos = NBT_GetChild_Deep(nbt, "Level", "zPos", NULL);
-                if (xPos == NULL || zPos == NULL) {
-                    printf("Cannot find position data of chunk%d,%d\n", i%32, i/32);
-                    errcount++;
-                } else {
-                    int x = (int)xPos->value_i;
-                    int z = (int)zPos->value_i;
-                    if (regionx*32 + (i%32) != x || regionz*32 + (i/32) != z) {
-                        printf("Chunk position error. Expected %d,%d , get %d,%d \n", regionx*32 + (i%32), regionz*32 + (i/32), x, z);
-                        errcount++;
-                    } else {
-                        success ++;
-                    }
-                }
-                NBT_Free(nbt);
-            } else {
-                printf("Chunk %d,%d load failed! errid=%x\n", i%32, i/32, error.errid);
-                errcount++;
-            }
-        } else {
+        if (mca->data[i] == NULL) {
             emptycount ++;
+            continue;
+        }
+        NBT* xPos = NBT_GetChild_Deep(mca->data[i], "Level", "xPos", NULL);
+        NBT* zPos = NBT_GetChild_Deep(mca->data[i], "Level", "zPos", NULL);
+        if (xPos == NULL || zPos == NULL) {
+            printf("Cannot find position data of chunk%d,%d\n", i%32, i/32);
+            errcount++;
+            continue;
+        }
+        int x = (int)xPos->value_i;
+        int z = (int)zPos->value_i;
+        if (mca->x*32 + (i%32) != x || mca->z*32 + (i/32) != z) {
+            printf("Chunk position error. Expected %d,%d , get %d,%d \n", mca->x*32 + (i%32), mca->z*32 + (i/32), x, z);
+            errcount++;
+        } else {
+            successcount ++;
         }
     }
-    printf("Load finished! %d chunks passed position check, %d chunks are empty, and %d chunks have error\n", success, emptycount, errcount);
+    printf("Load finished! %d chunks passed position check, %d chunks are empty, and %d chunks have error\n", successcount, emptycount, errcount);
 
+    // remember to release the memory
+    MCA_Free(mca);
+    // //also free the buffer, if you use it
+    // free(buffer);
+    
     return 0;
 }

@@ -680,7 +680,7 @@ int NBT_toSNBT(NBT* root, char* buff, int bufflen) {
 }
 
 NBT* NBT_GetChild(NBT* root, const char* key) {
-    if (root->type != TAG_Compound || root->child == NULL) {
+    if (root == NULL || root->type != TAG_Compound || root->child == NULL) {
         return NULL;
     }
     NBT* child = root->child;
@@ -713,7 +713,7 @@ NBT* NBT_Parse_Opt(uint8_t* data, int length, NBT_Error* errid) {
 
     if (length > 1 && data[0] == 0x1f && data[1] == 0x8b) {
         // file is gzip
-        size_t size = length * 100;
+        size_t size = 1 << 20;
         uint8_t* undata = malloc(size);
         int ret = decompress(undata, &size, data, length);
         if (ret != Z_OK) {
@@ -724,7 +724,7 @@ NBT* NBT_Parse_Opt(uint8_t* data, int length, NBT_Error* errid) {
         buffer = init_buffer(undata, size);
     } else if (data[0] == 0x78) {
         // file is zlib
-        size_t size = length * 100;
+        size_t size = 1 << 20;
         uint8_t* undata = malloc(size);
         int ret = uncompress(undata, &size, data, length);
         if (ret != Z_OK) {
@@ -795,10 +795,62 @@ void NBT_Free(NBT* root) {
     free(root);
 }
 
-int MCA_ExtractFile(FILE* fp, uint8_t** dest, uint32_t* destsize, int skip_chunk_error) {
+MCA* MCA_Init(char* filename) {
+    MCA* ret = malloc(sizeof(MCA));
+    memset(ret, 0, sizeof(MCA));
+    if (filename && filename[0]) {
+        char* str = strrchr(filename, '/');
+        if (!str) str = filename;
+        else str++;
+        int count = sscanf(str, "r.%d.%d.mca", &ret->x, &ret->z);
+        if (count == 2) {
+            ret->hasPosition = 1;
+        }
+    }
+    return ret;
+}
 
-    memset(dest, 0, sizeof(uint8_t*) * CHUNKS_IN_REGION);
-    memset(destsize, 0, sizeof(uint32_t) * CHUNKS_IN_REGION);
+MCA* MCA_Init_WithPos(int x, int z) {
+    MCA* ret = malloc(sizeof(MCA));
+    memset(ret, 0, sizeof(MCA));
+    ret->hasPosition = 1;
+    ret->x = x;
+    ret->z = z;
+    return ret;
+}
+
+void MCA_Free(MCA* mca) {
+    int i;
+    for (i = 0; i < CHUNKS_IN_REGION; i ++) {
+        if (mca->data[i]) {
+            NBT_Free(mca->data[i]);
+        }
+        if (mca->rawdata[i]) {
+            free(mca->rawdata[i]);
+        }
+    }
+    free(mca);
+}
+
+int MCA_Parse(MCA* mca) {
+    int i;
+    int errcount = 0;
+    NBT_Error error;
+    for (i = 0; i < CHUNKS_IN_REGION; i ++) {
+        if (mca->rawdata[i]) {
+            mca->data[i] = NBT_Parse_Opt(mca->rawdata[i], mca->size[i], &error);
+            if (mca->data[i] == NULL) {
+                errcount ++;
+            }
+        }
+    }
+    return errcount;
+}
+
+int MCA_ReadRaw_File(FILE* fp, MCA* mca, int skip_chunk_error) {
+
+    memset(mca->rawdata, 0, sizeof(uint8_t*) * CHUNKS_IN_REGION);
+    memset(mca->size, 0, sizeof(uint32_t) * CHUNKS_IN_REGION);
 
     if (fp == NULL) {
         return ERROR_INVALID_DATA;
@@ -842,28 +894,92 @@ int MCA_ExtractFile(FILE* fp, uint8_t** dest, uint32_t* destsize, int skip_chunk
 
         uint8_t type = fgetc(fp);
         if (type != 2 && !skip_chunk_error) {
-            int i;
-            for (i = 0; i < j; i ++) {
-                if (dest[i]) {
-                    free(dest[i]);
-                }
-            }
-            return ERROR_INVALID_DATA;
+            goto chunk_error;
         }
         
-        dest[j] = malloc(tsize - 1);
-        destsize[j] = tsize - 1;
-        int readSize = fread(dest[j], 1, destsize[j], fp);
+        mca->rawdata[j] = malloc(tsize - 1);
+        mca->size[j] = tsize - 1;
+        int readSize = fread(mca->rawdata[j], 1, mca->size[j], fp);
 
         if (readSize != tsize - 1 && !skip_chunk_error) {
-            int i;
-            for (i = 0; i <= j; i ++) {
-                if (dest[i]) {
-                    free(dest[i]);
-                }
-            }
-            return ERROR_INVALID_DATA;
+            goto chunk_error;
         }
     }
     return 0;
+chunk_error: {
+    int i;
+    for (i = 0; i <= j; i ++) {
+        if (mca->rawdata[i]) {
+            free(mca->rawdata[i]);
+        }
+    }
+    return ERROR_INVALID_DATA;
+    }
+}
+
+int MCA_ReadRaw(uint8_t* data, int length, MCA* mca, int skip_chunk_error) {
+
+    memset(mca->rawdata, 0, sizeof(uint8_t*) * CHUNKS_IN_REGION);
+    memset(mca->size, 0, sizeof(uint32_t) * CHUNKS_IN_REGION);
+
+    if (length <= 8192 || data == NULL) {
+        return ERROR_INVALID_DATA;
+    }
+
+    uint64_t offsets[CHUNKS_IN_REGION];
+
+    int j;
+    NBT_Buffer *buffer = init_buffer(data, length);
+    for (j = 0; j < CHUNKS_IN_REGION; j ++) {
+        uint32_t temp = 0;
+        int ret = getUint32(buffer, &temp);
+        offsets[j] = temp >> 8 << 12;
+        uint64_t tsize = ((temp & 0xff) << 12) + offsets[j];
+        if (ret == 0 || tsize > length) {
+            if (skip_chunk_error) {
+                offsets[j] = 0;
+            } else {
+                return ERROR_INVALID_DATA;
+            }
+        }
+    }
+
+    for (j = 0; j < CHUNKS_IN_REGION; j ++) {
+
+        if (offsets[j] == 0) {
+            continue;
+        }
+
+        buffer->pos = offsets[j];
+
+        uint32_t tsize;
+        uint8_t type;
+
+        int ret = getUint32(buffer, &tsize);
+        if (ret == 0) {
+            if (skip_chunk_error) continue;
+            else goto chunk_error;
+        }
+
+        ret = getUint8(buffer, &type);
+        if ((ret == 0 || type != 2) && !skip_chunk_error) {
+            goto chunk_error;
+        }
+        
+        mca->rawdata[j] = malloc(tsize - 1);
+        mca->size[j] = tsize - 1;
+
+        memcpy(mca->rawdata[j], data + offsets[j] + 5, mca->size[j]);
+
+    }
+    return 0;
+chunk_error: {
+    int i;
+    for (i = 0; i <= j; i ++) {
+        if (mca->rawdata[i]) {
+            free(mca->rawdata[i]);
+        }
+    }
+    return ERROR_INVALID_DATA;
+    }
 }
