@@ -45,18 +45,19 @@ typedef struct NBT_Buffer {
 #include <byteswap.h>
 #endif
 
-#define CHECK_WRITELEN(writelen, maxlen, buffer, tempbuf) { \
-        (buffer)->pos += (writelen);                        \
-        (maxlen) = (buffer)->len - (buffer)->pos;           \
-        if ((writelen) == 0) {                              \
-            return ERROR_INTERNAL;                          \
-        }                                                   \
-        if ((maxlen) <= 0) {                                \
-            return ERROR_BUFFER_OVERFLOW;                   \
-        }                                                   \
-        (writelen) = 0;                                     \
-        (tempbuf) = (char*)&(buffer)->data[(buffer)->pos];  \
-        }
+#define BUFFER_SPRINTF(buffer, str...) {                        \
+    char* buf = (char*)&(buffer)->data[(buffer)->pos];          \
+    int maxlen = (buffer)->len - (buffer)->pos;                 \
+    int writelen = snprintf(buf, maxlen, str);                   \
+    (buffer)->pos += writelen;                                  \
+    maxlen -= writelen;                                         \
+    if ((writelen) == 0) {                                      \
+        return ERROR_INTERNAL;                                  \
+    }                                                           \
+    if ((maxlen) <= 0) {                                        \
+        return ERROR_BUFFER_OVERFLOW;                           \
+    }                                                           \
+}
 
 NBT* create_NBT(uint8_t type);
 NBT_Buffer* init_buffer(uint8_t* data, int length);
@@ -403,10 +404,7 @@ int snbt_write_space(NBT_Buffer* buffer, int spacecount) {
 
 int snbt_write_key(NBT_Buffer* buffer, char* key) {
     if (key && key[0]) {
-        char* buf = (char*)&buffer->data[buffer->pos];
-        int maxlen = buffer->len - buffer->pos;
-        int writelen = snprintf(buf, maxlen, "%s:", key);
-        CHECK_WRITELEN(writelen, maxlen, buffer, buf);
+        BUFFER_SPRINTF(buffer, "%s:", key);
     }
     return 0;
 }
@@ -417,19 +415,14 @@ int snbt_write_number(NBT_Buffer* buffer, uint64_t value, char* key, int type) {
     if (ret) {
         return ret;
     }
-
-    char* buf = (char*)&buffer->data[buffer->pos];
-    int maxlen = buffer->len - buffer->pos;
-    int writelen = 0;
     
     switch(type) {
-        case TAG_Byte: writelen = snprintf(buf, maxlen, "%db,", (int8_t)value); break;
-        case TAG_Short: writelen = snprintf(buf, maxlen, "%ds,", (int16_t)value); break;
-        case TAG_Int: writelen = snprintf(buf, maxlen, "%d,", (int32_t)value); break;
-        case TAG_Long: writelen = snprintf(buf, maxlen, "%ldl,", (int64_t)value); break;
+        case TAG_Byte: BUFFER_SPRINTF(buffer, "%db,", (int8_t)value); break;
+        case TAG_Short: BUFFER_SPRINTF(buffer, "%ds,", (int16_t)value); break;
+        case TAG_Int: BUFFER_SPRINTF(buffer, "%d,", (int32_t)value); break;
+        case TAG_Long: BUFFER_SPRINTF(buffer, "%ldl,", (int64_t)value); break;
         default: return ERROR_INTERNAL;
     }
-    CHECK_WRITELEN(writelen, maxlen, buffer, buf);
     return 0;
 }
 
@@ -440,16 +433,11 @@ int snbt_write_point(NBT_Buffer* buffer, double value, char* key, int type) {
         return ret;
     }
 
-    char* buf = (char*)&buffer->data[buffer->pos];
-    int maxlen = buffer->len - buffer->pos;
-    int writelen = 0;
-
     switch(type) {
-        case TAG_Float: writelen = snprintf(buf, maxlen, "%ff,", (float)value); break;
-        case TAG_Double: writelen = snprintf(buf, maxlen, "%lfd,", (double)value); break;
+        case TAG_Float: BUFFER_SPRINTF(buffer, "%ff,", (float)value); break;
+        case TAG_Double: BUFFER_SPRINTF(buffer, "%lfd,", (double)value); break;
         default: return ERROR_INTERNAL;
     }
-    CHECK_WRITELEN(writelen, maxlen, buffer, buf);
     return 0;
 }
 
@@ -459,28 +447,24 @@ int snbt_write_array(NBT_Buffer* buffer, void* value, int length, char* key, int
         return ret;
     }
 
-    char* buf = (char*)&buffer->data[buffer->pos];
-    int maxlen = buffer->len - buffer->pos;
-    int writelen = 0;
-
     switch(type) {
-        case TAG_Byte_Array: writelen = snprintf(buf, maxlen, "[B;"); break;
-        case TAG_Int_Array: writelen = snprintf(buf, maxlen, "[I;"); break;
-        case TAG_Long_Array: writelen = snprintf(buf, maxlen, "[L;"); break;
+        case TAG_Byte_Array: BUFFER_SPRINTF(buffer, "[B;"); break;
+        case TAG_Int_Array: BUFFER_SPRINTF(buffer, "[I;"); break;
+        case TAG_Long_Array: BUFFER_SPRINTF(buffer, "[L;"); break;
         default: return ERROR_INTERNAL;
     }
-    CHECK_WRITELEN(writelen, maxlen, buffer, buf);
 
     int i;
     for (i = 0; i < length; i ++) {
         switch(type) {
-            case TAG_Byte_Array: writelen = snprintf(buf, maxlen, "%db,", ((int8_t*)value)[i]); break;
-            case TAG_Int_Array: writelen = snprintf(buf, maxlen, "%d,", ((int32_t*)value)[i]); break;
-            case TAG_Long_Array: writelen = snprintf(buf, maxlen, "%ldl,", ((int64_t*)value)[i]); break;
+            case TAG_Byte_Array: BUFFER_SPRINTF(buffer, "%db,", ((int8_t*)value)[i]); break;
+            case TAG_Int_Array: BUFFER_SPRINTF(buffer, "%d,", ((int32_t*)value)[i]); break;
+            case TAG_Long_Array: BUFFER_SPRINTF(buffer, "%ldl,", ((int64_t*)value)[i]); break;
             default: return ERROR_INTERNAL;
         }
-        CHECK_WRITELEN(writelen, maxlen, buffer, buf);
     }
+
+    int maxlen = buffer->len - buffer->pos;
     if (maxlen <= 3) {
         return ERROR_BUFFER_OVERFLOW;
     }
@@ -533,56 +517,44 @@ int snbt_write_compound(NBT_Buffer* buffer, NBT* root, int level, int space, int
         return ret;
     }
 
-    char* buf = (char*)&buffer->data[buffer->pos];
-    int maxlen = buffer->len - buffer->pos;
-    int writelen = 0;
-
     if (isarray) {
-        writelen = snprintf(buf, maxlen, "[");
+        BUFFER_SPRINTF(buffer, "[");
     } else {
-        writelen = snprintf(buf, maxlen, "{");
+        BUFFER_SPRINTF(buffer, "{");
     }
-    CHECK_WRITELEN(writelen, maxlen, buffer, buf);
 
     if (level <= curlevel && level >= 0) {
-        writelen = snprintf(buf, maxlen, "...");
-        CHECK_WRITELEN(writelen, maxlen, buffer, buf);
+        BUFFER_SPRINTF(buffer, "...");
     } else {
         if (space >= 0) {
-            writelen = snprintf(buf, maxlen, "\n");
-            CHECK_WRITELEN(writelen, maxlen, buffer, buf);
+            BUFFER_SPRINTF(buffer, "\n");
         }
         NBT* child = root->child;
         while(child != NULL) {
             ret = snbt_write_nbt(buffer, child, level, space, curlevel + 1);
-            buf = (char*)&buffer->data[buffer->pos];
             if (ret) {
                 return ret;
             }
             if (child->next == NULL) {
                 buffer->pos --;
-                buf = (char*)&buffer->data[buffer->pos];
-                buf[0] = 0;
+                buffer->data[buffer->pos] = 0;
             }
             if (space >= 0) {
-                writelen = snprintf(buf, maxlen, "\n");
-                CHECK_WRITELEN(writelen, maxlen, buffer, buf);
+                BUFFER_SPRINTF(buffer, "\n");
             }
             child = child->next;
         }
         ret = snbt_write_space(buffer, space * curlevel);
-        buf = (char*)&buffer->data[buffer->pos];
         if (ret) {
             return ret;
         }
     }
 
     if (isarray) {
-        writelen = snprintf(buf, maxlen, "],");
+        BUFFER_SPRINTF(buffer, "],");
     } else {
-        writelen = snprintf(buf, maxlen, "},");
+        BUFFER_SPRINTF(buffer, "},");
     }
-    CHECK_WRITELEN(writelen, maxlen, buffer, buf);
     return 0;
 }
 
