@@ -1,4 +1,4 @@
-/*  basic_opt.c: basic usage of libnbt options, including parsing an NBT file and translate to SNBT
+/*  basic_opt.c: basic usage of libnbt options, including parsing an NBT file and translate to SNBT and save to another NBT file
     Not copyrighted, provided to the public domain
     This file is part of the libnbt library
 */
@@ -54,6 +54,7 @@ int main(int argc, char** argv) {
         int bufferlength = 100000;
         char* output = malloc(bufferlength);
         
+        // translate to SNBT
         int ret = NBT_toSNBT_Opt(root, output, &bufferlength, maxlevel, space, &error);
         printf("%s\nLength=%d\n", output, bufferlength);
         if (ret && error.errid == ERROR_BUFFER_OVERFLOW) {
@@ -61,6 +62,7 @@ int main(int argc, char** argv) {
         }
 
         bufferlength = 100000;
+        // save to another NBT file
         NBT_Pack(root, (uint8_t*)output, &bufferlength);
         fwrite(output, 1, bufferlength, fp2);
         fflush(fp2);
