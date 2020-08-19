@@ -46,7 +46,7 @@ int main(int argc, char** argv) {
     }
 
     // Parse raw data to NBT structure
-    int errcount = MCA_Parse(mca);
+    int errcount = MCA_ParseAll(mca);
 
     int i;
     int emptycount = -errcount;

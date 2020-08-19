@@ -36,8 +36,8 @@ int main(int argc, char** argv) {
         int bufferlength = 100000;
         char* output = malloc(bufferlength);
         
-        int readlen = NBT_toSNBT(root, output, bufferlength);
-        printf("%s\nLength=%d\n", output, readlen);
+        NBT_toSNBT(root, output, &bufferlength);
+        printf("%s\nLength=%d\n", output, bufferlength);
 
         free(output);
 

@@ -48,7 +48,7 @@ typedef struct NBT_Buffer {
 #define BUFFER_SPRINTF(buffer, str...) {                        \
     char* buf = (char*)&(buffer)->data[(buffer)->pos];          \
     int maxlen = (buffer)->len - (buffer)->pos;                 \
-    int writelen = snprintf(buf, maxlen, str);                   \
+    int writelen = snprintf(buf, maxlen, str);                  \
     (buffer)->pos += writelen;                                  \
     maxlen -= writelen;                                         \
     if ((writelen) == 0) {                                      \
@@ -65,8 +65,14 @@ int getUint8(NBT_Buffer* buffer, uint8_t* result);
 int getUint16(NBT_Buffer* buffer, uint16_t* result);
 int getUint32(NBT_Buffer* buffer, uint32_t* result);
 int getUint64(NBT_Buffer* buffer, uint64_t* result);
+int writeUint8(NBT_Buffer* buffer, uint8_t value);
+int writeUint16(NBT_Buffer* buffer, uint16_t value);
+int writeUint32(NBT_Buffer* buffer, uint32_t value);
+int writeUint64(NBT_Buffer* buffer, uint64_t value);
 int getFloat(NBT_Buffer* buffer, float* result);
 int getDouble(NBT_Buffer* buffer, double* result);
+int writeFloat(NBT_Buffer* buffer, float value);
+int writeDouble(NBT_Buffer* buffer, double value);
 int getKey(NBT_Buffer* buffer, char** result);
 int parse_value(NBT* saveto, NBT_Buffer* buffer, uint8_t skipkey);
 int snbt_write_space(NBT_Buffer* buffer, int spacecount);
@@ -77,8 +83,9 @@ int snbt_write_array(NBT_Buffer* buffer, void* value, int length, char* key, int
 int snbt_write_string(NBT_Buffer* buffer, char* value, int length, char* key);
 int snbt_write_compound(NBT_Buffer* buffer, NBT* root, int level, int space, int curlevel, int isarray);
 int snbt_write_nbt(NBT_Buffer* buffer, NBT* root, int level, int space, int curlevel);
+int nbt_write_nbt(NBT_Buffer* buffer, NBT* root, int writekey);
 void fill_err(NBT_Error* err, int errid, int position);
-int decompress(uint8_t* dest, size_t* destsize, uint8_t* src, size_t srcsize);
+int decompress_gzip(uint8_t* dest, size_t* destsize, uint8_t* src, size_t srcsize);
 
 NBT* create_NBT(uint8_t type) {
     NBT* root = malloc(sizeof(NBT));
@@ -107,6 +114,15 @@ int getUint8(NBT_Buffer* buffer, uint8_t* result) {
     return 1;
 }
 
+int writeUint8(NBT_Buffer* buffer, uint8_t value) {
+    if (buffer->pos + 1 > buffer->len) {
+        return 0;
+    }
+    buffer->data[buffer->pos] = value;
+    ++ buffer->pos;
+    return 1;
+}
+
 int getUint16(NBT_Buffer* buffer, uint16_t* result) {
     if (buffer->pos + 2 > buffer->len) {
         return 0;
@@ -114,6 +130,15 @@ int getUint16(NBT_Buffer* buffer, uint16_t* result) {
     *result = *(uint16_t*)(buffer->data + buffer->pos);
     buffer->pos += 2;
     *result = bswap_16(*result);
+    return 2;
+}
+
+int writeUint16(NBT_Buffer* buffer, uint16_t value) {
+    if (buffer->pos + 2 > buffer->len) {
+        return 0;
+    }
+    *(uint16_t*)(buffer->data + buffer->pos) = bswap_16(value);
+    buffer->pos += 2;
     return 2;
 }
 
@@ -127,6 +152,15 @@ int getUint32(NBT_Buffer* buffer, uint32_t* result) {
     return 4;
 }
 
+int writeUint32(NBT_Buffer* buffer, uint32_t value) {
+    if (buffer->pos + 4 > buffer->len) {
+        return 0;
+    }
+    *(uint32_t*)(buffer->data + buffer->pos) = bswap_32(value);
+    buffer->pos += 4;
+    return 4;
+}
+
 int getUint64(NBT_Buffer* buffer, uint64_t* result) {
     if (buffer->pos + 8 > buffer->len) {
         return 0;
@@ -134,6 +168,15 @@ int getUint64(NBT_Buffer* buffer, uint64_t* result) {
     *result = *(uint64_t*)(buffer->data + buffer->pos);
     buffer->pos += 8;
     *result = bswap_64(*result);
+    return 8;
+}
+
+int writeUint64(NBT_Buffer* buffer, uint64_t value) {
+    if (buffer->pos + 8 > buffer->len) {
+        return 0;
+    }
+    *(uint64_t*)(buffer->data + buffer->pos) = bswap_64(value);
+    buffer->pos += 8;
     return 8;
 }
 
@@ -148,6 +191,15 @@ int getFloat(NBT_Buffer* buffer, float* result) {
     return 4;
 }
 
+int writeFloat(NBT_Buffer* buffer, float value) {
+    if (buffer->pos + 4 > buffer->len) {
+        return 0;
+    }
+    *(uint32_t*)(buffer->data + buffer->pos) = bswap_32(*(uint32_t*)&value);
+    buffer->pos += 4;
+    return 4;
+}
+
 int getDouble(NBT_Buffer* buffer, double* result) {
     if (buffer->pos + 8 > buffer->len) {
         return 0;
@@ -156,6 +208,15 @@ int getDouble(NBT_Buffer* buffer, double* result) {
     buffer->pos += 8;
     ret = bswap_64(ret);
     *result = *(double*)&ret;
+    return 8;
+}
+
+int writeDouble(NBT_Buffer* buffer, double value) {
+    if (buffer->pos + 8 > buffer->len) {
+        return 0;
+    }
+    *(uint64_t*)(buffer->data + buffer->pos) = bswap_64(*(uint64_t*)&value);
+    buffer->pos += 8;
     return 8;
 }
 
@@ -345,7 +406,7 @@ int parse_value(NBT* saveto, NBT_Buffer* buffer, uint8_t skipkey) {
             }
             len *= 4;
             saveto->value_a.value = malloc(len);
-            saveto->value_a.len = len;
+            saveto->value_a.len = len/4;
             if (buffer->pos + len > buffer->len) {
                 return ERROR_EARLY_EOF;
             }
@@ -365,7 +426,7 @@ int parse_value(NBT* saveto, NBT_Buffer* buffer, uint8_t skipkey) {
             }
             len *= 8;
             saveto->value_a.value = malloc(len);
-            saveto->value_a.len = len;
+            saveto->value_a.len = len/8;
             if (buffer->pos + len > buffer->len) {
                 return ERROR_EARLY_EOF;
             }
@@ -634,21 +695,17 @@ int decompress(uint8_t* dest, size_t* destsize, uint8_t* src, size_t srcsize) {
     return Z_OK;
 }
 
-int NBT_toSNBT_Opt(NBT* root, char* buff, int bufflen, int maxlevel, int space, NBT_Error* errid) {
-    NBT_Buffer buffer;
-    buffer.data = (uint8_t*)buff;
-    buffer.len = bufflen;
-    buffer.pos = 0;
+int NBT_toSNBT_Opt(NBT* root, char* buff, int* bufflen, int maxlevel, int space, NBT_Error* errid) {
+    NBT_Buffer *buffer = init_buffer((uint8_t*)buff, *bufflen);
     int ret;
-    ret = snbt_write_nbt(&buffer, root, maxlevel, space, 0);
-    fill_err(errid, ret, buffer.pos);
-    if (ret == 0) {
-        buffer.data[buffer.pos - 1] = 0;
-    }
-    return buffer.pos;
+    ret = snbt_write_nbt(buffer, root, maxlevel, space, 0);
+    fill_err(errid, ret, buffer->pos);
+    buffer->data[buffer->pos - 1] = 0;
+    *bufflen = buffer->pos;
+    return ret;
 }
 
-int NBT_toSNBT(NBT* root, char* buff, int bufflen) {
+int NBT_toSNBT(NBT* root, char* buff, int* bufflen) {
     return NBT_toSNBT_Opt(root, buff, bufflen, -1, -1, NULL);
 }
 
@@ -768,6 +825,236 @@ void NBT_Free(NBT* root) {
     free(root);
 }
 
+int nbt_write_key(NBT_Buffer* buffer, char* key, int type) {
+    int ret = 0;
+    ret = writeUint8(buffer, type);
+    if (!ret) {
+        return ERROR_BUFFER_OVERFLOW;
+    }
+    if (key && key[0]) {
+        int len = strlen(key);
+        ret = writeUint16(buffer, len);
+        if (!ret) {
+            return ERROR_BUFFER_OVERFLOW;
+        }
+        int i;
+        for (i = 0; i < len; i ++) {
+            ret = writeUint8(buffer, key[i]);
+            if (!ret) {
+                return ERROR_BUFFER_OVERFLOW;
+            }
+        }
+    } else {
+        ret = writeUint16(buffer, 0);
+        if (!ret) {
+            return ERROR_BUFFER_OVERFLOW;
+        }
+    }
+    return 0;
+}
+
+int nbt_write_number(NBT_Buffer* buffer, uint64_t value, char* key, int type) {
+    int ret;
+    
+    switch(type) {
+        case TAG_Byte: ret = writeUint8(buffer, value); break;
+        case TAG_Short: ret = writeUint16(buffer, value); break;
+        case TAG_Int: ret = writeUint32(buffer, value); break;
+        case TAG_Long: ret = writeUint64(buffer, value); break;
+        default: return ERROR_INTERNAL;
+    }
+    if (!ret) {
+        return ERROR_BUFFER_OVERFLOW;
+    }
+    return 0;
+}
+
+int nbt_write_point(NBT_Buffer* buffer, double value, char* key, int type) {
+    int ret;
+    switch(type) {
+        case TAG_Float: ret = writeFloat(buffer, value); break;
+        case TAG_Double: ret = writeDouble(buffer, value); break;
+        default: return ERROR_INTERNAL;
+    }
+    if (!ret) {
+        return ERROR_BUFFER_OVERFLOW;
+    }
+    return 0;
+}
+
+int nbt_write_array(NBT_Buffer* buffer, void* value, int32_t len, char* key, int type) {
+    int ret = writeUint32(buffer, len);
+    if (!ret) {
+        return ERROR_BUFFER_OVERFLOW;
+    }
+    switch(type) {
+        case TAG_Byte_Array: {
+            int i;
+            for (i = 0; i < len; i ++) {
+                ret = writeUint8(buffer, ((uint8_t*)value)[i]);
+                if (!ret) {
+                    return ERROR_BUFFER_OVERFLOW;
+                }
+            }
+        }
+        break;
+        case TAG_Int_Array: {
+            int i;
+            for (i = 0; i < len; i ++) {
+                ret = writeUint32(buffer, ((uint32_t*)value)[i]);
+                if (!ret) {
+                    return ERROR_BUFFER_OVERFLOW;
+                }
+            }
+        }
+        break;
+        case TAG_Long_Array: {
+            int i;
+            for (i = 0; i < len; i ++) {
+                ret = writeUint64(buffer, ((uint64_t*)value)[i]);
+                if (!ret) {
+                    return ERROR_BUFFER_OVERFLOW;
+                }
+            }
+        }
+        break;
+        default: return ERROR_INTERNAL;
+    }
+    return 0;
+}
+
+int nbt_write_string(NBT_Buffer* buffer, void* value, int32_t len, char* key) {
+    int ret;
+    
+    ret = writeUint16(buffer, len-1);
+    if (!ret) {
+        return ERROR_BUFFER_OVERFLOW;
+    }
+    int i;
+    for (i = 0; i < len-1; i ++) {
+        ret = writeUint8(buffer, ((uint8_t*)value)[i]);
+        if (!ret) {
+            return ERROR_BUFFER_OVERFLOW;
+        }
+    }
+    if (!ret) {
+        return ERROR_BUFFER_OVERFLOW;
+    }
+    return 0;
+}
+
+int nbt_write_compound(NBT_Buffer* buffer, NBT* root) {
+    int ret;
+    NBT* child = root->child;
+    while(child != NULL) {
+        ret = nbt_write_nbt(buffer, child, 1);
+        if (ret) {
+            return ret;
+        }
+        child = child->next;
+    }
+    ret = writeUint8(buffer, 0);
+    if (!ret) {
+        return ERROR_BUFFER_OVERFLOW;
+    }
+
+    return 0;
+}
+
+int nbt_write_list(NBT_Buffer* buffer, NBT* root) {
+    int ret;
+    NBT* child = root->child;
+    int count = 0;
+    while(child != NULL) {
+        count ++;
+        child = child->next;
+    }
+    child = root->child;
+    if (child == NULL) {
+        ret = writeUint8(buffer, 0);
+    } else {
+        ret = writeUint8(buffer, child->type);
+    }
+    ret = writeUint32(buffer, count);
+    if (!ret) {
+        return ERROR_BUFFER_OVERFLOW;
+    }
+    if (!ret) {
+        return ERROR_BUFFER_OVERFLOW;
+    }
+    while(child != NULL) {
+        ret = nbt_write_nbt(buffer, child, 0);
+        if (ret) {
+            return ret;
+        }
+        child = child->next;
+    }
+    return 0;
+}
+
+int nbt_write_nbt(NBT_Buffer* buffer, NBT* root, int writekey) {
+    int ret;
+    if (writekey) {
+        ret = nbt_write_key(buffer, root->key, root->type);
+        if (ret) {
+            return ret;
+        }
+    }
+    switch(root->type) {
+        case TAG_Byte:
+        case TAG_Short:
+        case TAG_Int:
+        case TAG_Long:
+        ret = nbt_write_number(buffer, root->value_i, root->key, root->type);
+        if (ret) return ret;
+        return 0;
+
+        case TAG_Float:
+        case TAG_Double:
+        ret = nbt_write_point(buffer, root->value_d, root->key, root->type);
+        if (ret) return ret;
+        return 0;
+
+        case TAG_Byte_Array:
+        case TAG_Int_Array:
+        case TAG_Long_Array:
+        ret = nbt_write_array(buffer, root->value_a.value, root->value_a.len, root->key, root->type);
+        if (ret) return ret;
+        return 0;
+
+        case TAG_String:
+        ret = nbt_write_string(buffer, root->value_a.value, root->value_a.len, root->key);
+        if (ret) return ret;
+        return 0;
+
+        case TAG_List:
+        ret = nbt_write_list(buffer, root);
+        if (ret) return ret;
+        return 0;
+
+        case TAG_Compound:
+        ret = nbt_write_compound(buffer, root);
+        if (ret) return ret;
+        return 0;
+
+        default:
+        return ERROR_INTERNAL;
+    }
+}
+
+int NBT_Pack_Opt(NBT* root, uint8_t* buffer, int* length, NBT_Error* errid) {
+    NBT_Buffer *buf = init_buffer(buffer, *length);
+    int ret;
+    ret = nbt_write_nbt(buf, root, 1);
+    fill_err(errid, ret, buf->pos);
+    *length = buf->pos;
+    return ret;
+}
+
+int NBT_Pack(NBT* root, uint8_t* buffer, int* length) {
+    return NBT_Pack_Opt(root, buffer, length, NULL);
+}
+
 MCA* MCA_Init(char* filename) {
     MCA* ret = malloc(sizeof(MCA));
     memset(ret, 0, sizeof(MCA));
@@ -805,7 +1092,7 @@ void MCA_Free(MCA* mca) {
     free(mca);
 }
 
-int MCA_Parse(MCA* mca) {
+int MCA_ParseAll(MCA* mca) {
     int i;
     int errcount = 0;
     NBT_Error error;
@@ -851,6 +1138,14 @@ int MCA_ReadRaw_File(FILE* fp, MCA* mca, int skip_chunk_error) {
                 return ERROR_INVALID_DATA;
             }
         }
+    }
+
+    for (j = 0; j < CHUNKS_IN_REGION; j ++) {
+        uint64_t t = fgetc(fp) << 24;
+        t |= fgetc(fp) << 16;
+        t |= fgetc(fp) << 8;
+        t |= fgetc(fp);
+        mca->epoch[j] = t;
     }
 
     for (j = 0; j < CHUNKS_IN_REGION; j ++) {
@@ -914,6 +1209,20 @@ int MCA_ReadRaw(uint8_t* data, int length, MCA* mca, int skip_chunk_error) {
             } else {
                 return ERROR_INVALID_DATA;
             }
+        }
+    }
+
+    for (j = 0; j < CHUNKS_IN_REGION; j ++) {
+        uint32_t temp = 0;
+        int ret = getUint32(buffer, &temp);
+        if (ret == 0) {
+            if (skip_chunk_error) {
+                mca->epoch[j] = 0;
+            } else {
+                return ERROR_INVALID_DATA;
+            }
+        } else {
+            mca->epoch[j] = temp;
         }
     }
 

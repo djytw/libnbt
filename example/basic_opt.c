@@ -5,6 +5,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "nbt.h"
 
 int main(int argc, char** argv) {
@@ -27,6 +28,14 @@ int main(int argc, char** argv) {
         printf("Cannot open file %s!\n", argv[1]);
         return -2;
     }
+    char fileout[500];
+    strcpy(fileout, argv[1]);
+    strcat(fileout, ".out");
+    FILE* fp2 = fopen(fileout, "w+");
+    if (fp == NULL) {
+        printf("Cannot open file %s!\n", fileout);
+        return -2;
+    }
     fseek(fp, 0, SEEK_END);
     int size = ftell(fp);
     fseek(fp, 0, SEEK_SET);
@@ -45,12 +54,16 @@ int main(int argc, char** argv) {
         int bufferlength = 100000;
         char* output = malloc(bufferlength);
         
-        int readlen = NBT_toSNBT_Opt(root, output, bufferlength, maxlevel, space, &error);
-        printf("%s\nLength=%d\n", output, readlen);
-        if (error.errid == ERROR_BUFFER_OVERFLOW) {
+        int ret = NBT_toSNBT_Opt(root, output, &bufferlength, maxlevel, space, &error);
+        printf("%s\nLength=%d\n", output, bufferlength);
+        if (ret && error.errid == ERROR_BUFFER_OVERFLOW) {
             printf("buffer not enough!\n");
         }
 
+        bufferlength = 100000;
+        NBT_Pack(root, (uint8_t*)output, &bufferlength);
+        fwrite(output, 1, bufferlength, fp2);
+        fflush(fp2);
         free(output);
 
         // Remember to use NBT_Free after use
@@ -60,6 +73,8 @@ int main(int argc, char** argv) {
     }
 
     free(data);
+    fclose(fp);
+    fclose(fp2);
 
     return 0;
 }

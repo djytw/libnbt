@@ -56,6 +56,7 @@ typedef struct NBT {
 typedef struct MCA {
     uint8_t* rawdata[CHUNKS_IN_REGION];
     uint32_t size[CHUNKS_IN_REGION];
+    uint32_t epoch[CHUNKS_IN_REGION];
     NBT* data[CHUNKS_IN_REGION];
     uint8_t hasPosition;
     int x;
@@ -70,16 +71,18 @@ typedef struct NBT_Error {
 NBT*  NBT_Parse(uint8_t* data, int length);
 NBT*  NBT_Parse_Opt(uint8_t* data, int length, NBT_Error* err);
 void  NBT_Free(NBT* root);
+int   NBT_Pack(NBT* root, uint8_t* buffer, int* length);
+int   NBT_Pack_Opt(NBT* root, uint8_t* buffer, int* length, NBT_Error* errid);
 NBT*  NBT_GetChild(NBT* root, const char* key);
 NBT*  NBT_GetChild_Deep(NBT* root, ...);
-int   NBT_toSNBT(NBT* root, char* buff, int bufflen);
-int   NBT_toSNBT_Opt(NBT* root, char* buff, int bufflen, int maxlevel, int space, NBT_Error* errid);
+int   NBT_toSNBT(NBT* root, char* buff, int* bufflen);
+int   NBT_toSNBT_Opt(NBT* root, char* buff, int* bufflen, int maxlevel, int space, NBT_Error* errid);
 MCA*  MCA_Init(char* filename);
 MCA*  MCA_Init_WithPos(int x, int z);
 int   MCA_ReadRaw(uint8_t* data, int length, MCA* mca, int skip_chunk_error);
 int   MCA_ReadRaw_File(FILE* fp, MCA* mca, int skip_chunk_error);
 int   MCA_WriteRaw_File(FILE* fp, MCA* mca);
-int   MCA_Parse(MCA* mca);
+int   MCA_ParseAll(MCA* mca);
 void  MCA_Free(MCA* mca);
 
 #ifdef __cplusplus
