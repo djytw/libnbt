@@ -51,12 +51,12 @@ int main(int argc, char** argv) {
     if (error.errid == 0) {
         printf("NBT parse OK!\n");
 
-        int bufferlength = 100000;
+        size_t bufferlength = 100000;
         char* output = malloc(bufferlength);
         
         // translate to SNBT
         int ret = NBT_toSNBT_Opt(root, output, &bufferlength, maxlevel, space, &error);
-        printf("%s\nLength=%d\n", output, bufferlength);
+        printf("%s\nLength=%ld\n", output, bufferlength);
         if (ret && error.errid == ERROR_BUFFER_OVERFLOW) {
             printf("buffer not enough!\n");
         }

@@ -29,6 +29,12 @@ typedef enum NBT_Tags {
     TAG_End, TAG_Byte, TAG_Short, TAG_Int, TAG_Long, TAG_Float, TAG_Double, TAG_Byte_Array, TAG_String, TAG_List, TAG_Compound, TAG_Int_Array, TAG_Long_Array
 } NBT_Tags;
 
+typedef enum NBT_Compression {
+    NBT_Compression_GZIP = 1,
+    NBT_Compression_ZLIB = 2,
+    NBT_Compression_NONE = 3,
+} NBT_Compression;
+
 // Error code
 #define ERROR_MASK 0xf0000000
 #define ERROR_INTERNAL          (ERROR_MASK|0x1)  // Internal error, maybe a bug?
@@ -100,12 +106,12 @@ typedef struct NBT_Error {
 NBT*  NBT_Parse(uint8_t* data, int length);
 NBT*  NBT_Parse_Opt(uint8_t* data, int length, NBT_Error* err);
 void  NBT_Free(NBT* root);
-int   NBT_Pack(NBT* root, uint8_t* buffer, int* length);
-int   NBT_Pack_Opt(NBT* root, uint8_t* buffer, int* length, NBT_Error* errid);
+int   NBT_Pack(NBT* root, uint8_t* buffer, size_t* length);
+int   NBT_Pack_Opt(NBT* root, uint8_t* buffer, size_t* length, NBT_Compression compression, NBT_Error* errid);
 NBT*  NBT_GetChild(NBT* root, const char* key);
 NBT*  NBT_GetChild_Deep(NBT* root, ...);
-int   NBT_toSNBT(NBT* root, char* buff, int* bufflen);
-int   NBT_toSNBT_Opt(NBT* root, char* buff, int* bufflen, int maxlevel, int space, NBT_Error* errid);
+int   NBT_toSNBT(NBT* root, char* buff, size_t* bufflen);
+int   NBT_toSNBT_Opt(NBT* root, char* buff, size_t* bufflen, int maxlevel, int space, NBT_Error* errid);
 MCA*  MCA_Init(char* filename);
 MCA*  MCA_Init_WithPos(int x, int z);
 int   MCA_ReadRaw(uint8_t* data, int length, MCA* mca, int skip_chunk_error);

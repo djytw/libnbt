@@ -33,11 +33,11 @@ int main(int argc, char** argv) {
     if (root) {
         printf("NBT parse OK!\n");
 
-        int bufferlength = 100000;
+        size_t bufferlength = 100000;
         char* output = malloc(bufferlength);
         
         NBT_toSNBT(root, output, &bufferlength);
-        printf("%s\nLength=%d\n", output, bufferlength);
+        printf("%s\nLength=%ld\n", output, bufferlength);
 
         free(output);
 
