@@ -103,8 +103,8 @@ typedef struct NBT_Error {
     int position;
 } NBT_Error;
 
-NBT*  NBT_Parse(uint8_t* data, int length);
-NBT*  NBT_Parse_Opt(uint8_t* data, int length, NBT_Error* err);
+NBT*  NBT_Parse(uint8_t* data, size_t length);
+NBT*  NBT_Parse_Opt(uint8_t* data, size_t length, NBT_Error* err);
 void  NBT_Free(NBT* root);
 int   NBT_Pack(NBT* root, uint8_t* buffer, size_t* length);
 int   NBT_Pack_Opt(NBT* root, uint8_t* buffer, size_t* length, NBT_Compression compression, NBT_Error* errid);
@@ -114,7 +114,7 @@ int   NBT_toSNBT(NBT* root, char* buff, size_t* bufflen);
 int   NBT_toSNBT_Opt(NBT* root, char* buff, size_t* bufflen, int maxlevel, int space, NBT_Error* errid);
 MCA*  MCA_Init(char* filename);
 MCA*  MCA_Init_WithPos(int x, int z);
-int   MCA_ReadRaw(uint8_t* data, int length, MCA* mca, int skip_chunk_error);
+int   MCA_ReadRaw(uint8_t* data, size_t length, MCA* mca, int skip_chunk_error);
 int   MCA_ReadRaw_File(FILE* fp, MCA* mca, int skip_chunk_error);
 int   MCA_WriteRaw_File(FILE* fp, MCA* mca);
 int   MCA_ParseAll(MCA* mca);

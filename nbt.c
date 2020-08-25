@@ -822,7 +822,7 @@ NBT* NBT_GetChild_Deep(NBT* root, ...) {
     return current;
 }
 
-NBT* NBT_Parse_Opt(uint8_t* data, int length, NBT_Error* errid) {
+NBT* NBT_Parse_Opt(uint8_t* data, size_t length, NBT_Error* errid) {
 
     NBT_Buffer* buffer;
 
@@ -870,7 +870,7 @@ NBT* NBT_Parse_Opt(uint8_t* data, int length, NBT_Error* errid) {
     }
 }
 
-NBT* NBT_Parse(uint8_t* data, int length) {
+NBT* NBT_Parse(uint8_t* data, size_t length) {
     return NBT_Parse_Opt(data, length, NULL);
 }
 
@@ -1290,7 +1290,7 @@ chunk_error: {
     }
 }
 
-int MCA_ReadRaw(uint8_t* data, int length, MCA* mca, int skip_chunk_error) {
+int MCA_ReadRaw(uint8_t* data, size_t length, MCA* mca, int skip_chunk_error) {
 
     memset(mca->rawdata, 0, sizeof(uint8_t*) * CHUNKS_IN_REGION);
     memset(mca->size, 0, sizeof(uint32_t) * CHUNKS_IN_REGION);
