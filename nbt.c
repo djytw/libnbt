@@ -1160,12 +1160,12 @@ int NBT_Pack(NBT* root, uint8_t* buffer, size_t* length) {
     return NBT_Pack_Opt(root, buffer, length, NBT_Compression_GZIP, NULL);
 }
 
-MCA* MCA_Init(char* filename) {
+MCA* MCA_Init(const char* filename) {
     MCA* ret = malloc(sizeof(MCA));
     memset(ret, 0, sizeof(MCA));
     if (filename && filename[0]) {
         char* str = strrchr(filename, '/');
-        if (!str) str = filename;
+        if (!str) str = (char*)filename;
         else str++;
         int count = sscanf(str, "r.%d.%d.mca", &ret->x, &ret->z);
         if (count == 2) {
