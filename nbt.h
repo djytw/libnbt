@@ -112,7 +112,7 @@ NBT*  NBT_GetChild(NBT* root, const char* key);
 NBT*  NBT_GetChild_Deep(NBT* root, ...);
 int   NBT_toSNBT(NBT* root, char* buff, size_t* bufflen);
 int   NBT_toSNBT_Opt(NBT* root, char* buff, size_t* bufflen, int maxlevel, int space, NBT_Error* errid);
-MCA*  MCA_Init(char* filename);
+MCA*  MCA_Init(const char* filename);
 MCA*  MCA_Init_WithPos(int x, int z);
 int   MCA_ReadRaw(uint8_t* data, size_t length, MCA* mca, int skip_chunk_error);
 int   MCA_ReadRaw_File(FILE* fp, MCA* mca, int skip_chunk_error);
