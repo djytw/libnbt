@@ -59,46 +59,53 @@ typedef struct NBT_Buffer {
     }                                                           \
 }
 
-NBT* create_NBT(uint8_t type);
-NBT_Buffer* init_buffer(uint8_t* data, int length);
-int getUint8(NBT_Buffer* buffer, uint8_t* result);
-int getUint16(NBT_Buffer* buffer, uint16_t* result);
-int getUint32(NBT_Buffer* buffer, uint32_t* result);
-int getUint64(NBT_Buffer* buffer, uint64_t* result);
-int writeUint8(NBT_Buffer* buffer, uint8_t value);
-int writeUint16(NBT_Buffer* buffer, uint16_t value);
-int writeUint32(NBT_Buffer* buffer, uint32_t value);
-int writeUint64(NBT_Buffer* buffer, uint64_t value);
-int getFloat(NBT_Buffer* buffer, float* result);
-int getDouble(NBT_Buffer* buffer, double* result);
-int writeFloat(NBT_Buffer* buffer, float value);
-int writeDouble(NBT_Buffer* buffer, double value);
-int getKey(NBT_Buffer* buffer, char** result);
-int parse_value(NBT* saveto, NBT_Buffer* buffer, uint8_t skipkey);
-int snbt_write_space(NBT_Buffer* buffer, int spacecount);
-int snbt_write_key(NBT_Buffer* buffer, char* key);
-int snbt_write_number(NBT_Buffer* buffer, uint64_t value, char* key, int type);
-int snbt_write_point(NBT_Buffer* buffer, double value, char* key, int type);
-int snbt_write_array(NBT_Buffer* buffer, void* value, int length, char* key, int type);
-int snbt_write_string(NBT_Buffer* buffer, char* value, int length, char* key);
-int snbt_write_compound(NBT_Buffer* buffer, NBT* root, int level, int space, int curlevel, int isarray);
-int snbt_write_nbt(NBT_Buffer* buffer, NBT* root, int level, int space, int curlevel);
-int nbt_write_nbt(NBT_Buffer* buffer, NBT* root, int writekey);
-void fill_err(NBT_Error* err, int errid, int position);
-int decompress_gzip(uint8_t** dest, size_t* destsize, uint8_t* src, size_t srcsize);
-int compress_gzip(uint8_t* dest, size_t* destsize, uint8_t* src, size_t srcsize);
-int decompress_zlib(uint8_t** dest, size_t* destsize, uint8_t* src, size_t srcsize);
+NBT* LIBNBT_create_NBT(uint8_t type);
+NBT_Buffer* LIBNBT_init_buffer(uint8_t* data, int length);
+int LIBNBT_getUint8(NBT_Buffer* buffer, uint8_t* result);
+int LIBNBT_getUint16(NBT_Buffer* buffer, uint16_t* result);
+int LIBNBT_getUint32(NBT_Buffer* buffer, uint32_t* result);
+int LIBNBT_getUint64(NBT_Buffer* buffer, uint64_t* result);
+int LIBNBT_writeUint8(NBT_Buffer* buffer, uint8_t value);
+int LIBNBT_writeUint16(NBT_Buffer* buffer, uint16_t value);
+int LIBNBT_writeUint32(NBT_Buffer* buffer, uint32_t value);
+int LIBNBT_writeUint64(NBT_Buffer* buffer, uint64_t value);
+int LIBNBT_getFloat(NBT_Buffer* buffer, float* result);
+int LIBNBT_getDouble(NBT_Buffer* buffer, double* result);
+int LIBNBT_writeFloat(NBT_Buffer* buffer, float value);
+int LIBNBT_writeDouble(NBT_Buffer* buffer, double value);
+int LIBNBT_getKey(NBT_Buffer* buffer, char** result);
+int LIBNBT_parse_value(NBT* saveto, NBT_Buffer* buffer, uint8_t skipkey);
+int LIBNBT_snbt_write_space(NBT_Buffer* buffer, int spacecount);
+int LIBNBT_snbt_write_key(NBT_Buffer* buffer, char* key);
+int LIBNBT_snbt_write_number(NBT_Buffer* buffer, uint64_t value, char* key, int type);
+int LIBNBT_snbt_write_point(NBT_Buffer* buffer, double value, char* key, int type);
+int LIBNBT_snbt_write_array(NBT_Buffer* buffer, void* value, int length, char* key, int type);
+int LIBNBT_snbt_write_string(NBT_Buffer* buffer, char* value, int length, char* key);
+int LIBNBT_snbt_write_compound(NBT_Buffer* buffer, NBT* root, int level, int space, int curlevel, int isarray);
+int LIBNBT_snbt_write_nbt(NBT_Buffer* buffer, NBT* root, int level, int space, int curlevel);
+int LIBNBT_nbt_write_nbt(NBT_Buffer* buffer, NBT* root, int writekey);
+int LIBNBT_nbt_write_key(NBT_Buffer* buffer, char* key, int type);
+int LIBNBT_nbt_write_number(NBT_Buffer* buffer, uint64_t value, char* key, int type);
+int LIBNBT_nbt_write_point(NBT_Buffer* buffer, double value, char* key, int type);
+int LIBNBT_nbt_write_array(NBT_Buffer* buffer, void* value, int32_t len, char* key, int type);
+int LIBNBT_nbt_write_string(NBT_Buffer* buffer, void* value, int32_t len, char* key);
+int LIBNBT_nbt_write_compound(NBT_Buffer* buffer, NBT* root);
+int LIBNBT_nbt_write_list(NBT_Buffer* buffer, NBT* root);
+void LIBNBT_fill_err(NBT_Error* err, int errid, int position);
+int LIBNBT_decompress_gzip(uint8_t** dest, size_t* destsize, uint8_t* src, size_t srcsize);
+int LIBNBT_compress_gzip(uint8_t* dest, size_t* destsize, uint8_t* src, size_t srcsize);
+int LIBNBT_decompress_zlib(uint8_t** dest, size_t* destsize, uint8_t* src, size_t srcsize);
 
-#define compress_zlib(a,b,c,d) compress((a), (b), (c), (d))
+#define LIBNBT_compress_zlib(a,b,c,d) compress((a), (b), (c), (d))
 
-NBT* create_NBT(uint8_t type) {
+NBT* LIBNBT_create_NBT(uint8_t type) {
     NBT* root = malloc(sizeof(NBT));
     memset(root, 0, sizeof(NBT));
     root->type = type;
     return root;
 }
 
-NBT_Buffer* init_buffer(uint8_t* data, int length) {
+NBT_Buffer* LIBNBT_init_buffer(uint8_t* data, int length) {
     NBT_Buffer* buffer = malloc(sizeof(NBT_Buffer));
     if (buffer == NULL) {
         return NULL;
@@ -109,7 +116,7 @@ NBT_Buffer* init_buffer(uint8_t* data, int length) {
     return buffer;
 }
 
-int getUint8(NBT_Buffer* buffer, uint8_t* result) {
+int LIBNBT_getUint8(NBT_Buffer* buffer, uint8_t* result) {
     if (buffer->pos + 1 > buffer->len) {
         return 0;
     }
@@ -118,7 +125,7 @@ int getUint8(NBT_Buffer* buffer, uint8_t* result) {
     return 1;
 }
 
-int writeUint8(NBT_Buffer* buffer, uint8_t value) {
+int LIBNBT_writeUint8(NBT_Buffer* buffer, uint8_t value) {
     if (buffer->pos + 1 > buffer->len) {
         return 0;
     }
@@ -127,7 +134,7 @@ int writeUint8(NBT_Buffer* buffer, uint8_t value) {
     return 1;
 }
 
-int getUint16(NBT_Buffer* buffer, uint16_t* result) {
+int LIBNBT_getUint16(NBT_Buffer* buffer, uint16_t* result) {
     if (buffer->pos + 2 > buffer->len) {
         return 0;
     }
@@ -137,7 +144,7 @@ int getUint16(NBT_Buffer* buffer, uint16_t* result) {
     return 2;
 }
 
-int writeUint16(NBT_Buffer* buffer, uint16_t value) {
+int LIBNBT_writeUint16(NBT_Buffer* buffer, uint16_t value) {
     if (buffer->pos + 2 > buffer->len) {
         return 0;
     }
@@ -146,7 +153,7 @@ int writeUint16(NBT_Buffer* buffer, uint16_t value) {
     return 2;
 }
 
-int getUint32(NBT_Buffer* buffer, uint32_t* result) {
+int LIBNBT_getUint32(NBT_Buffer* buffer, uint32_t* result) {
     if (buffer->pos + 4 > buffer->len) {
         return 0;
     }
@@ -156,7 +163,7 @@ int getUint32(NBT_Buffer* buffer, uint32_t* result) {
     return 4;
 }
 
-int writeUint32(NBT_Buffer* buffer, uint32_t value) {
+int LIBNBT_writeUint32(NBT_Buffer* buffer, uint32_t value) {
     if (buffer->pos + 4 > buffer->len) {
         return 0;
     }
@@ -165,7 +172,7 @@ int writeUint32(NBT_Buffer* buffer, uint32_t value) {
     return 4;
 }
 
-int getUint64(NBT_Buffer* buffer, uint64_t* result) {
+int LIBNBT_getUint64(NBT_Buffer* buffer, uint64_t* result) {
     if (buffer->pos + 8 > buffer->len) {
         return 0;
     }
@@ -175,7 +182,7 @@ int getUint64(NBT_Buffer* buffer, uint64_t* result) {
     return 8;
 }
 
-int writeUint64(NBT_Buffer* buffer, uint64_t value) {
+int LIBNBT_writeUint64(NBT_Buffer* buffer, uint64_t value) {
     if (buffer->pos + 8 > buffer->len) {
         return 0;
     }
@@ -184,7 +191,7 @@ int writeUint64(NBT_Buffer* buffer, uint64_t value) {
     return 8;
 }
 
-int getFloat(NBT_Buffer* buffer, float* result) {
+int LIBNBT_getFloat(NBT_Buffer* buffer, float* result) {
     if (buffer->pos + 4 > buffer->len) {
         return 0;
     }
@@ -195,7 +202,7 @@ int getFloat(NBT_Buffer* buffer, float* result) {
     return 4;
 }
 
-int writeFloat(NBT_Buffer* buffer, float value) {
+int LIBNBT_writeFloat(NBT_Buffer* buffer, float value) {
     if (buffer->pos + 4 > buffer->len) {
         return 0;
     }
@@ -204,7 +211,7 @@ int writeFloat(NBT_Buffer* buffer, float value) {
     return 4;
 }
 
-int getDouble(NBT_Buffer* buffer, double* result) {
+int LIBNBT_getDouble(NBT_Buffer* buffer, double* result) {
     if (buffer->pos + 8 > buffer->len) {
         return 0;
     }
@@ -215,7 +222,7 @@ int getDouble(NBT_Buffer* buffer, double* result) {
     return 8;
 }
 
-int writeDouble(NBT_Buffer* buffer, double value) {
+int LIBNBT_writeDouble(NBT_Buffer* buffer, double value) {
     if (buffer->pos + 8 > buffer->len) {
         return 0;
     }
@@ -224,9 +231,9 @@ int writeDouble(NBT_Buffer* buffer, double value) {
     return 8;
 }
 
-int getKey(NBT_Buffer* buffer, char** result) {
+int LIBNBT_getKey(NBT_Buffer* buffer, char** result) {
     uint16_t len;
-    if(!getUint16(buffer, &len)) {
+    if(!LIBNBT_getUint16(buffer, &len)) {
         return 0;
     }
     if (len == 0) {
@@ -243,7 +250,7 @@ int getKey(NBT_Buffer* buffer, char** result) {
     return 2 + len;
 }
 
-int parse_value(NBT* saveto, NBT_Buffer* buffer, uint8_t skipkey) {
+int LIBNBT_parse_value(NBT* saveto, NBT_Buffer* buffer, uint8_t skipkey) {
     
     if (saveto == NULL || buffer == NULL || buffer->data == NULL) {
         return ERROR_INTERNAL;
@@ -251,7 +258,7 @@ int parse_value(NBT* saveto, NBT_Buffer* buffer, uint8_t skipkey) {
 
     uint8_t type = saveto->type;
     if (type == TAG_End) {
-        if (!getUint8(buffer, &type)) {
+        if (!LIBNBT_getUint8(buffer, &type)) {
             return ERROR_EARLY_EOF;
         }
         if (!isValidTag(type)) {
@@ -262,7 +269,7 @@ int parse_value(NBT* saveto, NBT_Buffer* buffer, uint8_t skipkey) {
 
     if (!skipkey) {
         char* key;
-        if (!getKey(buffer, &key)) {
+        if (!LIBNBT_getKey(buffer, &key)) {
             return ERROR_EARLY_EOF;
         }
         saveto->key = key;
@@ -271,7 +278,7 @@ int parse_value(NBT* saveto, NBT_Buffer* buffer, uint8_t skipkey) {
     switch (type) {
         case TAG_Byte: {
             uint8_t value;
-            if (!getUint8(buffer, &value)) {
+            if (!LIBNBT_getUint8(buffer, &value)) {
                 return ERROR_EARLY_EOF;
             }
             saveto->value_i = value;
@@ -279,7 +286,7 @@ int parse_value(NBT* saveto, NBT_Buffer* buffer, uint8_t skipkey) {
         }
         case TAG_Short: {
             uint16_t value;
-            if (!getUint16(buffer, &value)) {
+            if (!LIBNBT_getUint16(buffer, &value)) {
                 return ERROR_EARLY_EOF;
             }
             saveto->value_i = value;
@@ -287,7 +294,7 @@ int parse_value(NBT* saveto, NBT_Buffer* buffer, uint8_t skipkey) {
         }
         case TAG_Int: {
             uint32_t value;
-            if (!getUint32(buffer, &value)) {
+            if (!LIBNBT_getUint32(buffer, &value)) {
                 return ERROR_EARLY_EOF;
             }
             saveto->value_i = value;
@@ -295,7 +302,7 @@ int parse_value(NBT* saveto, NBT_Buffer* buffer, uint8_t skipkey) {
         }
         case TAG_Long: {
             uint64_t value;
-            if (!getUint64(buffer, &value)) {
+            if (!LIBNBT_getUint64(buffer, &value)) {
                 return ERROR_EARLY_EOF;
             }
             saveto->value_i = value;
@@ -303,7 +310,7 @@ int parse_value(NBT* saveto, NBT_Buffer* buffer, uint8_t skipkey) {
         }
         case TAG_Float: {
             float value;
-            if (!getFloat(buffer, &value)) {
+            if (!LIBNBT_getFloat(buffer, &value)) {
                 return ERROR_EARLY_EOF;
             }
             saveto->value_d = value;
@@ -311,7 +318,7 @@ int parse_value(NBT* saveto, NBT_Buffer* buffer, uint8_t skipkey) {
         }
         case TAG_Double: {
             double value;
-            if (!getDouble(buffer, &value)) {
+            if (!LIBNBT_getDouble(buffer, &value)) {
                 return ERROR_EARLY_EOF;
             }
             saveto->value_d = value;
@@ -319,7 +326,7 @@ int parse_value(NBT* saveto, NBT_Buffer* buffer, uint8_t skipkey) {
         }
         case TAG_Byte_Array: {
             uint32_t len;
-            if (!getUint32(buffer, &len)) {
+            if (!LIBNBT_getUint32(buffer, &len)) {
                 return ERROR_EARLY_EOF;
             }
             saveto->value_a.value = malloc(len);
@@ -333,7 +340,7 @@ int parse_value(NBT* saveto, NBT_Buffer* buffer, uint8_t skipkey) {
         }
         case TAG_String: {
             uint16_t len;
-            if (!getUint16(buffer, &len)) {
+            if (!LIBNBT_getUint16(buffer, &len)) {
                 return ERROR_EARLY_EOF;
             }
             saveto->value_a.value = malloc(len + 1);
@@ -348,11 +355,11 @@ int parse_value(NBT* saveto, NBT_Buffer* buffer, uint8_t skipkey) {
         }
         case TAG_List: {
             uint8_t listtype;
-            if (!getUint8(buffer, &listtype)) {
+            if (!LIBNBT_getUint8(buffer, &listtype)) {
                 return ERROR_EARLY_EOF;
             }
             uint32_t len;
-            if (!getUint32(buffer, &len)) {
+            if (!LIBNBT_getUint32(buffer, &len)) {
                 return ERROR_EARLY_EOF;
             }
             if (listtype == TAG_End && len != 0) {
@@ -361,8 +368,8 @@ int parse_value(NBT* saveto, NBT_Buffer* buffer, uint8_t skipkey) {
             int i;
             NBT* last = NULL;
             for (i = 0; i < len; i ++) {
-                NBT* child = create_NBT(listtype);
-                int ret = parse_value(child, buffer, 1);
+                NBT* child = LIBNBT_create_NBT(listtype);
+                int ret = LIBNBT_parse_value(child, buffer, 1);
                 if (ret) {
                     return ret;
                 }
@@ -381,14 +388,14 @@ int parse_value(NBT* saveto, NBT_Buffer* buffer, uint8_t skipkey) {
             NBT* last = NULL;
             while (1) {
                 uint8_t listtype;
-                if (!getUint8(buffer, &listtype)) {
+                if (!LIBNBT_getUint8(buffer, &listtype)) {
                     return ERROR_EARLY_EOF;
                 }
                 if (listtype == 0) {
                     break;
                 }
-                NBT* child = create_NBT(listtype);
-                int ret = parse_value(child, buffer, 0);
+                NBT* child = LIBNBT_create_NBT(listtype);
+                int ret = LIBNBT_parse_value(child, buffer, 0);
                 if (ret) {
                     return ret;
                 }
@@ -405,7 +412,7 @@ int parse_value(NBT* saveto, NBT_Buffer* buffer, uint8_t skipkey) {
         }
         case TAG_Int_Array: {
             uint32_t len;
-            if (!getUint32(buffer, &len)) {
+            if (!LIBNBT_getUint32(buffer, &len)) {
                 return ERROR_EARLY_EOF;
             }
             len *= 4;
@@ -425,7 +432,7 @@ int parse_value(NBT* saveto, NBT_Buffer* buffer, uint8_t skipkey) {
         }
         case TAG_Long_Array: {
             uint32_t len;
-            if (!getUint32(buffer, &len)) {
+            if (!LIBNBT_getUint32(buffer, &len)) {
                 return ERROR_EARLY_EOF;
             }
             len *= 8;
@@ -449,7 +456,7 @@ int parse_value(NBT* saveto, NBT_Buffer* buffer, uint8_t skipkey) {
     return 0;
 }
 
-int snbt_write_space(NBT_Buffer* buffer, int spacecount) {
+int LIBNBT_snbt_write_space(NBT_Buffer* buffer, int spacecount) {
     if (spacecount < 0) {
         return 0;
     }
@@ -467,16 +474,16 @@ int snbt_write_space(NBT_Buffer* buffer, int spacecount) {
     return 0;
 }
 
-int snbt_write_key(NBT_Buffer* buffer, char* key) {
+int LIBNBT_snbt_write_key(NBT_Buffer* buffer, char* key) {
     if (key && key[0]) {
         BUFFER_SPRINTF(buffer, "%s:", key);
     }
     return 0;
 }
 
-int snbt_write_number(NBT_Buffer* buffer, uint64_t value, char* key, int type) {
+int LIBNBT_snbt_write_number(NBT_Buffer* buffer, uint64_t value, char* key, int type) {
 
-    int ret = snbt_write_key(buffer, key);
+    int ret = LIBNBT_snbt_write_key(buffer, key);
     if (ret) {
         return ret;
     }
@@ -491,9 +498,9 @@ int snbt_write_number(NBT_Buffer* buffer, uint64_t value, char* key, int type) {
     return 0;
 }
 
-int snbt_write_point(NBT_Buffer* buffer, double value, char* key, int type) {
+int LIBNBT_snbt_write_point(NBT_Buffer* buffer, double value, char* key, int type) {
 
-    int ret = snbt_write_key(buffer, key);
+    int ret = LIBNBT_snbt_write_key(buffer, key);
     if (ret) {
         return ret;
     }
@@ -506,8 +513,8 @@ int snbt_write_point(NBT_Buffer* buffer, double value, char* key, int type) {
     return 0;
 }
 
-int snbt_write_array(NBT_Buffer* buffer, void* value, int length, char* key, int type) {
-    int ret = snbt_write_key(buffer, key);
+int LIBNBT_snbt_write_array(NBT_Buffer* buffer, void* value, int length, char* key, int type) {
+    int ret = LIBNBT_snbt_write_key(buffer, key);
     if (ret) {
         return ret;
     }
@@ -542,8 +549,8 @@ int snbt_write_array(NBT_Buffer* buffer, void* value, int length, char* key, int
     return ret;
 }
 
-int snbt_write_string(NBT_Buffer* buffer, char* value, int length, char* key) {
-    int ret = snbt_write_key(buffer, key);
+int LIBNBT_snbt_write_string(NBT_Buffer* buffer, char* value, int length, char* key) {
+    int ret = LIBNBT_snbt_write_key(buffer, key);
     if (ret) {
         return ret;
     }
@@ -571,13 +578,13 @@ int snbt_write_string(NBT_Buffer* buffer, char* value, int length, char* key) {
     return 0;
 }
 
-int snbt_write_compound(NBT_Buffer* buffer, NBT* root, int level, int space, int curlevel, int isarray) {
-    int ret = snbt_write_space(buffer, space * curlevel);
+int LIBNBT_snbt_write_compound(NBT_Buffer* buffer, NBT* root, int level, int space, int curlevel, int isarray) {
+    int ret = LIBNBT_snbt_write_space(buffer, space * curlevel);
     if (ret) {
         return ret;
     }
 
-    ret = snbt_write_key(buffer, root->key);
+    ret = LIBNBT_snbt_write_key(buffer, root->key);
     if (ret) {
         return ret;
     }
@@ -596,7 +603,7 @@ int snbt_write_compound(NBT_Buffer* buffer, NBT* root, int level, int space, int
         }
         NBT* child = root->child;
         while(child != NULL) {
-            ret = snbt_write_nbt(buffer, child, level, space, curlevel + 1);
+            ret = LIBNBT_snbt_write_nbt(buffer, child, level, space, curlevel + 1);
             if (ret) {
                 return ret;
             }
@@ -609,7 +616,7 @@ int snbt_write_compound(NBT_Buffer* buffer, NBT* root, int level, int space, int
             }
             child = child->next;
         }
-        ret = snbt_write_space(buffer, space * curlevel);
+        ret = LIBNBT_snbt_write_space(buffer, space * curlevel);
         if (ret) {
             return ret;
         }
@@ -623,46 +630,46 @@ int snbt_write_compound(NBT_Buffer* buffer, NBT* root, int level, int space, int
     return 0;
 }
 
-int snbt_write_nbt(NBT_Buffer* buffer, NBT* root, int level, int space, int curlevel) {
+int LIBNBT_snbt_write_nbt(NBT_Buffer* buffer, NBT* root, int level, int space, int curlevel) {
     int ret;
     switch(root->type) {
         case TAG_Byte:
         case TAG_Short:
         case TAG_Int:
         case TAG_Long:
-        ret = snbt_write_space(buffer, space * curlevel);
+        ret = LIBNBT_snbt_write_space(buffer, space * curlevel);
         if (ret) return ret;
-        ret = snbt_write_number(buffer, root->value_i, root->key, root->type);
+        ret = LIBNBT_snbt_write_number(buffer, root->value_i, root->key, root->type);
         if (ret) return ret;
         return 0;
 
         case TAG_Float:
         case TAG_Double:
-        ret = snbt_write_space(buffer, space * curlevel);
+        ret = LIBNBT_snbt_write_space(buffer, space * curlevel);
         if (ret) return ret;
-        ret = snbt_write_point(buffer, root->value_d, root->key, root->type);
+        ret = LIBNBT_snbt_write_point(buffer, root->value_d, root->key, root->type);
         if (ret) return ret;
         return 0;
 
         case TAG_Byte_Array:
         case TAG_Int_Array:
         case TAG_Long_Array:
-        ret = snbt_write_space(buffer, space * curlevel);
+        ret = LIBNBT_snbt_write_space(buffer, space * curlevel);
         if (ret) return ret;
-        ret = snbt_write_array(buffer, root->value_a.value, root->value_a.len, root->key, root->type);
+        ret = LIBNBT_snbt_write_array(buffer, root->value_a.value, root->value_a.len, root->key, root->type);
         if (ret) return ret;
         return 0;
 
         case TAG_String:
-        ret = snbt_write_space(buffer, space * curlevel);
+        ret = LIBNBT_snbt_write_space(buffer, space * curlevel);
         if (ret) return ret;
-        ret = snbt_write_string(buffer, root->value_a.value, root->value_a.len, root->key);
+        ret = LIBNBT_snbt_write_string(buffer, root->value_a.value, root->value_a.len, root->key);
         if (ret) return ret;
         return 0;
 
         case TAG_List:
         case TAG_Compound:
-        ret = snbt_write_compound(buffer, root, level, space, curlevel, root->type == TAG_List);
+        ret = LIBNBT_snbt_write_compound(buffer, root, level, space, curlevel, root->type == TAG_List);
         if (ret) return ret;
         return 0;
 
@@ -671,7 +678,7 @@ int snbt_write_nbt(NBT_Buffer* buffer, NBT* root, int level, int space, int curl
     }
 }
 
-void fill_err(NBT_Error* err, int errid, int position) {
+void LIBNBT_fill_err(NBT_Error* err, int errid, int position) {
     if (err == NULL) {
         return;
     }
@@ -679,7 +686,7 @@ void fill_err(NBT_Error* err, int errid, int position) {
     err->position = position;
 }
 
-int decompress_gzip(uint8_t** dest, size_t* destsize, uint8_t* src, size_t srcsize) {
+int LIBNBT_decompress_gzip(uint8_t** dest, size_t* destsize, uint8_t* src, size_t srcsize) {
 
     size_t sizestep = 1 << 16;
     size_t sizecur = sizestep;
@@ -719,7 +726,7 @@ int decompress_gzip(uint8_t** dest, size_t* destsize, uint8_t* src, size_t srcsi
     return Z_OK;
 }
 
-int decompress_zlib(uint8_t** dest, size_t* destsize, uint8_t* src, size_t srcsize) {
+int LIBNBT_decompress_zlib(uint8_t** dest, size_t* destsize, uint8_t* src, size_t srcsize) {
 
     size_t sizestep = 1 << 16;
     size_t sizecur = sizestep;
@@ -759,7 +766,7 @@ int decompress_zlib(uint8_t** dest, size_t* destsize, uint8_t* src, size_t srcsi
     return Z_OK;
 }
 
-int compress_gzip(uint8_t* dest, size_t* destsize, uint8_t* src, size_t srcsize) {
+int LIBNBT_compress_gzip(uint8_t* dest, size_t* destsize, uint8_t* src, size_t srcsize) {
     z_stream strm;
     strm.zalloc = Z_NULL;
     strm.zfree = Z_NULL;
@@ -781,10 +788,10 @@ int compress_gzip(uint8_t* dest, size_t* destsize, uint8_t* src, size_t srcsize)
 }
 
 int NBT_toSNBT_Opt(NBT* root, char* buff, size_t* bufflen, int maxlevel, int space, NBT_Error* errid) {
-    NBT_Buffer *buffer = init_buffer((uint8_t*)buff, *bufflen);
+    NBT_Buffer *buffer = LIBNBT_init_buffer((uint8_t*)buff, *bufflen);
     int ret;
-    ret = snbt_write_nbt(buffer, root, maxlevel, space, 0);
-    fill_err(errid, ret, buffer->pos);
+    ret = LIBNBT_snbt_write_nbt(buffer, root, maxlevel, space, 0);
+    LIBNBT_fill_err(errid, ret, buffer->pos);
     buffer->data[buffer->pos - 1] = 0;
     *bufflen = buffer->pos;
     return ret;
@@ -830,41 +837,41 @@ NBT* NBT_Parse_Opt(uint8_t* data, size_t length, NBT_Error* errid) {
         // file is gzip
         size_t size;
         uint8_t* undata;
-        int ret = decompress_gzip(&undata, &size, data, length);
+        int ret = LIBNBT_decompress_gzip(&undata, &size, data, length);
         if (ret != Z_OK) {
-            fill_err(errid, ERROR_UNZIP_ERROR, 0);
+            LIBNBT_fill_err(errid, ERROR_UNZIP_ERROR, 0);
             return NULL;
         }
-        buffer = init_buffer(undata, size);
+        buffer = LIBNBT_init_buffer(undata, size);
     } else if (data[0] == 0x78) {
         // file is zlib
         size_t size;
         uint8_t* undata;
-        int ret = decompress_zlib(&undata, &size, data, length);
+        int ret = LIBNBT_decompress_zlib(&undata, &size, data, length);
         if (ret != Z_OK) {
-            fill_err(errid, ERROR_UNZIP_ERROR, 0);
+            LIBNBT_fill_err(errid, ERROR_UNZIP_ERROR, 0);
             return NULL;
         }
-        buffer = init_buffer(undata, size);
+        buffer = LIBNBT_init_buffer(undata, size);
     } else {
-        buffer = init_buffer(data, length);
+        buffer = LIBNBT_init_buffer(data, length);
     }
 
-    NBT* root = create_NBT(TAG_End);
-    int ret = parse_value(root, buffer, 0);
+    NBT* root = LIBNBT_create_NBT(TAG_End);
+    int ret = LIBNBT_parse_value(root, buffer, 0);
     if (buffer->data != data) {
         free(buffer->data);
     }
 
     if (ret != 0) {
-        fill_err(errid, ret, buffer->pos);
+        LIBNBT_fill_err(errid, ret, buffer->pos);
         NBT_Free(root);
         return NULL;
     } else {
         if (buffer->pos != buffer->len) {
-            fill_err(errid, ERROR_LEFTOVER_DATA, buffer->pos);
+            LIBNBT_fill_err(errid, ERROR_LEFTOVER_DATA, buffer->pos);
         } else {
-            fill_err(errid, 0, buffer->pos);
+            LIBNBT_fill_err(errid, 0, buffer->pos);
         }
         return root;
     }
@@ -908,27 +915,27 @@ void NBT_Free(NBT* root) {
     free(root);
 }
 
-int nbt_write_key(NBT_Buffer* buffer, char* key, int type) {
+int LIBNBT_nbt_write_key(NBT_Buffer* buffer, char* key, int type) {
     int ret = 0;
-    ret = writeUint8(buffer, type);
+    ret = LIBNBT_writeUint8(buffer, type);
     if (!ret) {
         return ERROR_BUFFER_OVERFLOW;
     }
     if (key && key[0]) {
         int len = strlen(key);
-        ret = writeUint16(buffer, len);
+        ret = LIBNBT_writeUint16(buffer, len);
         if (!ret) {
             return ERROR_BUFFER_OVERFLOW;
         }
         int i;
         for (i = 0; i < len; i ++) {
-            ret = writeUint8(buffer, key[i]);
+            ret = LIBNBT_writeUint8(buffer, key[i]);
             if (!ret) {
                 return ERROR_BUFFER_OVERFLOW;
             }
         }
     } else {
-        ret = writeUint16(buffer, 0);
+        ret = LIBNBT_writeUint16(buffer, 0);
         if (!ret) {
             return ERROR_BUFFER_OVERFLOW;
         }
@@ -936,14 +943,14 @@ int nbt_write_key(NBT_Buffer* buffer, char* key, int type) {
     return 0;
 }
 
-int nbt_write_number(NBT_Buffer* buffer, uint64_t value, char* key, int type) {
+int LIBNBT_nbt_write_number(NBT_Buffer* buffer, uint64_t value, char* key, int type) {
     int ret;
     
     switch(type) {
-        case TAG_Byte: ret = writeUint8(buffer, value); break;
-        case TAG_Short: ret = writeUint16(buffer, value); break;
-        case TAG_Int: ret = writeUint32(buffer, value); break;
-        case TAG_Long: ret = writeUint64(buffer, value); break;
+        case TAG_Byte: ret = LIBNBT_writeUint8(buffer, value); break;
+        case TAG_Short: ret = LIBNBT_writeUint16(buffer, value); break;
+        case TAG_Int: ret = LIBNBT_writeUint32(buffer, value); break;
+        case TAG_Long: ret = LIBNBT_writeUint64(buffer, value); break;
         default: return ERROR_INTERNAL;
     }
     if (!ret) {
@@ -952,11 +959,11 @@ int nbt_write_number(NBT_Buffer* buffer, uint64_t value, char* key, int type) {
     return 0;
 }
 
-int nbt_write_point(NBT_Buffer* buffer, double value, char* key, int type) {
+int LIBNBT_nbt_write_point(NBT_Buffer* buffer, double value, char* key, int type) {
     int ret;
     switch(type) {
-        case TAG_Float: ret = writeFloat(buffer, value); break;
-        case TAG_Double: ret = writeDouble(buffer, value); break;
+        case TAG_Float: ret = LIBNBT_writeFloat(buffer, value); break;
+        case TAG_Double: ret = LIBNBT_writeDouble(buffer, value); break;
         default: return ERROR_INTERNAL;
     }
     if (!ret) {
@@ -965,8 +972,8 @@ int nbt_write_point(NBT_Buffer* buffer, double value, char* key, int type) {
     return 0;
 }
 
-int nbt_write_array(NBT_Buffer* buffer, void* value, int32_t len, char* key, int type) {
-    int ret = writeUint32(buffer, len);
+int LIBNBT_nbt_write_array(NBT_Buffer* buffer, void* value, int32_t len, char* key, int type) {
+    int ret = LIBNBT_writeUint32(buffer, len);
     if (!ret) {
         return ERROR_BUFFER_OVERFLOW;
     }
@@ -974,7 +981,7 @@ int nbt_write_array(NBT_Buffer* buffer, void* value, int32_t len, char* key, int
         case TAG_Byte_Array: {
             int i;
             for (i = 0; i < len; i ++) {
-                ret = writeUint8(buffer, ((uint8_t*)value)[i]);
+                ret = LIBNBT_writeUint8(buffer, ((uint8_t*)value)[i]);
                 if (!ret) {
                     return ERROR_BUFFER_OVERFLOW;
                 }
@@ -984,7 +991,7 @@ int nbt_write_array(NBT_Buffer* buffer, void* value, int32_t len, char* key, int
         case TAG_Int_Array: {
             int i;
             for (i = 0; i < len; i ++) {
-                ret = writeUint32(buffer, ((uint32_t*)value)[i]);
+                ret = LIBNBT_writeUint32(buffer, ((uint32_t*)value)[i]);
                 if (!ret) {
                     return ERROR_BUFFER_OVERFLOW;
                 }
@@ -994,7 +1001,7 @@ int nbt_write_array(NBT_Buffer* buffer, void* value, int32_t len, char* key, int
         case TAG_Long_Array: {
             int i;
             for (i = 0; i < len; i ++) {
-                ret = writeUint64(buffer, ((uint64_t*)value)[i]);
+                ret = LIBNBT_writeUint64(buffer, ((uint64_t*)value)[i]);
                 if (!ret) {
                     return ERROR_BUFFER_OVERFLOW;
                 }
@@ -1006,16 +1013,16 @@ int nbt_write_array(NBT_Buffer* buffer, void* value, int32_t len, char* key, int
     return 0;
 }
 
-int nbt_write_string(NBT_Buffer* buffer, void* value, int32_t len, char* key) {
+int LIBNBT_nbt_write_string(NBT_Buffer* buffer, void* value, int32_t len, char* key) {
     int ret;
     
-    ret = writeUint16(buffer, len-1);
+    ret = LIBNBT_writeUint16(buffer, len-1);
     if (!ret) {
         return ERROR_BUFFER_OVERFLOW;
     }
     int i;
     for (i = 0; i < len-1; i ++) {
-        ret = writeUint8(buffer, ((uint8_t*)value)[i]);
+        ret = LIBNBT_writeUint8(buffer, ((uint8_t*)value)[i]);
         if (!ret) {
             return ERROR_BUFFER_OVERFLOW;
         }
@@ -1026,17 +1033,17 @@ int nbt_write_string(NBT_Buffer* buffer, void* value, int32_t len, char* key) {
     return 0;
 }
 
-int nbt_write_compound(NBT_Buffer* buffer, NBT* root) {
+int LIBNBT_nbt_write_compound(NBT_Buffer* buffer, NBT* root) {
     int ret;
     NBT* child = root->child;
     while(child != NULL) {
-        ret = nbt_write_nbt(buffer, child, 1);
+        ret = LIBNBT_nbt_write_nbt(buffer, child, 1);
         if (ret) {
             return ret;
         }
         child = child->next;
     }
-    ret = writeUint8(buffer, 0);
+    ret = LIBNBT_writeUint8(buffer, 0);
     if (!ret) {
         return ERROR_BUFFER_OVERFLOW;
     }
@@ -1044,7 +1051,7 @@ int nbt_write_compound(NBT_Buffer* buffer, NBT* root) {
     return 0;
 }
 
-int nbt_write_list(NBT_Buffer* buffer, NBT* root) {
+int LIBNBT_nbt_write_list(NBT_Buffer* buffer, NBT* root) {
     int ret;
     NBT* child = root->child;
     int count = 0;
@@ -1054,11 +1061,11 @@ int nbt_write_list(NBT_Buffer* buffer, NBT* root) {
     }
     child = root->child;
     if (child == NULL) {
-        ret = writeUint8(buffer, 0);
+        ret = LIBNBT_writeUint8(buffer, 0);
     } else {
-        ret = writeUint8(buffer, child->type);
+        ret = LIBNBT_writeUint8(buffer, child->type);
     }
-    ret = writeUint32(buffer, count);
+    ret = LIBNBT_writeUint32(buffer, count);
     if (!ret) {
         return ERROR_BUFFER_OVERFLOW;
     }
@@ -1066,7 +1073,7 @@ int nbt_write_list(NBT_Buffer* buffer, NBT* root) {
         return ERROR_BUFFER_OVERFLOW;
     }
     while(child != NULL) {
-        ret = nbt_write_nbt(buffer, child, 0);
+        ret = LIBNBT_nbt_write_nbt(buffer, child, 0);
         if (ret) {
             return ret;
         }
@@ -1075,10 +1082,10 @@ int nbt_write_list(NBT_Buffer* buffer, NBT* root) {
     return 0;
 }
 
-int nbt_write_nbt(NBT_Buffer* buffer, NBT* root, int writekey) {
+int LIBNBT_nbt_write_nbt(NBT_Buffer* buffer, NBT* root, int writekey) {
     int ret;
     if (writekey) {
-        ret = nbt_write_key(buffer, root->key, root->type);
+        ret = LIBNBT_nbt_write_key(buffer, root->key, root->type);
         if (ret) {
             return ret;
         }
@@ -1088,35 +1095,35 @@ int nbt_write_nbt(NBT_Buffer* buffer, NBT* root, int writekey) {
         case TAG_Short:
         case TAG_Int:
         case TAG_Long:
-        ret = nbt_write_number(buffer, root->value_i, root->key, root->type);
+        ret = LIBNBT_nbt_write_number(buffer, root->value_i, root->key, root->type);
         if (ret) return ret;
         return 0;
 
         case TAG_Float:
         case TAG_Double:
-        ret = nbt_write_point(buffer, root->value_d, root->key, root->type);
+        ret = LIBNBT_nbt_write_point(buffer, root->value_d, root->key, root->type);
         if (ret) return ret;
         return 0;
 
         case TAG_Byte_Array:
         case TAG_Int_Array:
         case TAG_Long_Array:
-        ret = nbt_write_array(buffer, root->value_a.value, root->value_a.len, root->key, root->type);
+        ret = LIBNBT_nbt_write_array(buffer, root->value_a.value, root->value_a.len, root->key, root->type);
         if (ret) return ret;
         return 0;
 
         case TAG_String:
-        ret = nbt_write_string(buffer, root->value_a.value, root->value_a.len, root->key);
+        ret = LIBNBT_nbt_write_string(buffer, root->value_a.value, root->value_a.len, root->key);
         if (ret) return ret;
         return 0;
 
         case TAG_List:
-        ret = nbt_write_list(buffer, root);
+        ret = LIBNBT_nbt_write_list(buffer, root);
         if (ret) return ret;
         return 0;
 
         case TAG_Compound:
-        ret = nbt_write_compound(buffer, root);
+        ret = LIBNBT_nbt_write_compound(buffer, root);
         if (ret) return ret;
         return 0;
 
@@ -1128,14 +1135,14 @@ int nbt_write_nbt(NBT_Buffer* buffer, NBT* root, int writekey) {
 int NBT_Pack_Opt(NBT* root, uint8_t* buffer, size_t* length, NBT_Compression compression, NBT_Error* errid) {
     NBT_Buffer *buf;
     if (compression == NBT_Compression_NONE) {
-        buf = init_buffer(buffer, *length);
+        buf = LIBNBT_init_buffer(buffer, *length);
     } else {
         uint8_t* tempbuf = malloc(1 << 20);
-        buf = init_buffer(tempbuf, 1 << 20);
+        buf = LIBNBT_init_buffer(tempbuf, 1 << 20);
     }
     int ret;
-    ret = nbt_write_nbt(buf, root, 1);
-    fill_err(errid, ret, buf->pos);
+    ret = LIBNBT_nbt_write_nbt(buf, root, 1);
+    LIBNBT_fill_err(errid, ret, buf->pos);
     
     if (compression == NBT_Compression_NONE) {
         *length = buf->pos;
@@ -1145,11 +1152,11 @@ int NBT_Pack_Opt(NBT* root, uint8_t* buffer, size_t* length, NBT_Compression com
             return ret;
         }
         if (compression == NBT_Compression_GZIP) {
-            ret = compress_gzip(buffer, length, buf->data, buf->pos);
+            ret = LIBNBT_compress_gzip(buffer, length, buf->data, buf->pos);
             free(buf->data);
             return ret;
         } else {
-            ret = compress_zlib(buffer, length, buf->data, buf->pos);
+            ret = LIBNBT_compress_zlib(buffer, length, buf->data, buf->pos);
             free(buf->data);
             return ret;
         }
@@ -1302,10 +1309,10 @@ int MCA_ReadRaw(uint8_t* data, size_t length, MCA* mca, int skip_chunk_error) {
     uint64_t offsets[CHUNKS_IN_REGION];
 
     int j;
-    NBT_Buffer *buffer = init_buffer(data, length);
+    NBT_Buffer *buffer = LIBNBT_init_buffer(data, length);
     for (j = 0; j < CHUNKS_IN_REGION; j ++) {
         uint32_t temp = 0;
-        int ret = getUint32(buffer, &temp);
+        int ret = LIBNBT_getUint32(buffer, &temp);
         offsets[j] = temp >> 8 << 12;
         uint64_t tsize = ((temp & 0xff) << 12) + offsets[j];
         if (ret == 0 || tsize > length) {
@@ -1319,7 +1326,7 @@ int MCA_ReadRaw(uint8_t* data, size_t length, MCA* mca, int skip_chunk_error) {
 
     for (j = 0; j < CHUNKS_IN_REGION; j ++) {
         uint32_t temp = 0;
-        int ret = getUint32(buffer, &temp);
+        int ret = LIBNBT_getUint32(buffer, &temp);
         if (ret == 0) {
             if (skip_chunk_error) {
                 mca->epoch[j] = 0;
@@ -1342,13 +1349,13 @@ int MCA_ReadRaw(uint8_t* data, size_t length, MCA* mca, int skip_chunk_error) {
         uint32_t tsize;
         uint8_t type;
 
-        int ret = getUint32(buffer, &tsize);
+        int ret = LIBNBT_getUint32(buffer, &tsize);
         if (ret == 0) {
             if (skip_chunk_error) continue;
             else goto chunk_error;
         }
 
-        ret = getUint8(buffer, &type);
+        ret = LIBNBT_getUint8(buffer, &type);
         if ((ret == 0 || type != 2) && !skip_chunk_error) {
             goto chunk_error;
         }
