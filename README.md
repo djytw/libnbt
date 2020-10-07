@@ -8,6 +8,12 @@ Lightweight Minecraft NBT/MCA/SNBT file parser in C.
 
 The easiest way to incorporate `libnbt` is to include `nbt.c` and `nbt.h` in your project and start using it, since the entire library contains only these two files.
 
+### Zlib or libdeflate
+
+[libdeflate](https://github.com/ebiggers/libdeflate) is a faster compress & decompress library with higher compress rate comparing to Zlib. To enable libdeflate, pass `-DLIBNBT_USE_LIBDEFLATE` when compiling `nbt.c` (You need to build libdeflate yourself). 
+
+To build examples with libdeflate, use `make ZLIB=LIBDEFLATE`.
+
 ### Parsing NBT file
 
 Supports uncompressed/zlib/gzip NBT files. Read the file to a byte array (by `fread` or whatever you like), then pass the array and array length to:
