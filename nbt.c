@@ -21,7 +21,20 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-#include <zlib.h>
+
+#ifndef LIBNBT_USE_LIBDEFLATE
+    #include <zlib.h>
+    int LIBNBT_decompress_gzip(uint8_t** dest, size_t* destsize, uint8_t* src, size_t srcsize);
+    int LIBNBT_compress_gzip(uint8_t* dest, size_t* destsize, uint8_t* src, size_t srcsize);
+    int LIBNBT_decompress_zlib(uint8_t** dest, size_t* destsize, uint8_t* src, size_t srcsize);
+    #define LIBNBT_compress_zlib(a,b,c,d) compress((a), (b), (c), (d))
+#else
+    #include "libdeflate/libdeflate.h"
+    int LIBNBT_decompress_gzip(uint8_t** dest, size_t* destsize, uint8_t* src, size_t srcsize);
+    int LIBNBT_compress_gzip(uint8_t* dest, size_t* destsize, uint8_t* src, size_t srcsize);
+    int LIBNBT_decompress_zlib(uint8_t** dest, size_t* destsize, uint8_t* src, size_t srcsize);
+    int LIBNBT_compress_zlib(uint8_t* dest, size_t* destsize, uint8_t* src, size_t srcsize);
+#endif
 
 typedef struct NBT_Buffer {
     uint8_t* data;
@@ -92,11 +105,6 @@ int LIBNBT_nbt_write_string(NBT_Buffer* buffer, void* value, int32_t len, char* 
 int LIBNBT_nbt_write_compound(NBT_Buffer* buffer, NBT* root);
 int LIBNBT_nbt_write_list(NBT_Buffer* buffer, NBT* root);
 void LIBNBT_fill_err(NBT_Error* err, int errid, int position);
-int LIBNBT_decompress_gzip(uint8_t** dest, size_t* destsize, uint8_t* src, size_t srcsize);
-int LIBNBT_compress_gzip(uint8_t* dest, size_t* destsize, uint8_t* src, size_t srcsize);
-int LIBNBT_decompress_zlib(uint8_t** dest, size_t* destsize, uint8_t* src, size_t srcsize);
-
-#define LIBNBT_compress_zlib(a,b,c,d) compress((a), (b), (c), (d))
 
 NBT* LIBNBT_create_NBT(uint8_t type) {
     NBT* root = malloc(sizeof(NBT));
@@ -686,6 +694,8 @@ void LIBNBT_fill_err(NBT_Error* err, int errid, int position) {
     err->position = position;
 }
 
+#ifndef LIBNBT_USE_LIBDEFLATE
+
 int LIBNBT_decompress_gzip(uint8_t** dest, size_t* destsize, uint8_t* src, size_t srcsize) {
 
     size_t sizestep = 1 << 16;
@@ -723,7 +733,7 @@ int LIBNBT_decompress_gzip(uint8_t** dest, size_t* destsize, uint8_t* src, size_
     inflateEnd (&strm);
     *destsize = sizecur - strm.avail_out;
     *dest = buffer;
-    return Z_OK;
+    return 0;
 }
 
 int LIBNBT_decompress_zlib(uint8_t** dest, size_t* destsize, uint8_t* src, size_t srcsize) {
@@ -763,7 +773,7 @@ int LIBNBT_decompress_zlib(uint8_t** dest, size_t* destsize, uint8_t* src, size_
     inflateEnd (&strm);
     *destsize = sizecur - strm.avail_out;
     *dest = buffer;
-    return Z_OK;
+    return 0;
 }
 
 int LIBNBT_compress_gzip(uint8_t* dest, size_t* destsize, uint8_t* src, size_t srcsize) {
@@ -784,8 +794,102 @@ int LIBNBT_compress_gzip(uint8_t* dest, size_t* destsize, uint8_t* src, size_t s
     }
     deflateEnd(&strm);
     *destsize = strm.total_out;
-    return Z_OK;
+    return 0;
 }
+
+#else
+
+int LIBNBT_decompress_gzip(uint8_t** dest, size_t* destsize, uint8_t* src, size_t srcsize) {
+    struct libdeflate_decompressor * decompressor;
+    decompressor = libdeflate_alloc_decompressor();
+    size_t sizestep = 1 << 20;
+    size_t sizecur = sizestep;
+    uint8_t* buffer = malloc(sizecur);
+
+    enum libdeflate_result result;
+    size_t length;
+
+    while(1) {
+        result = libdeflate_gzip_decompress(decompressor, src, srcsize, buffer, sizecur, &length);
+        if (result == LIBDEFLATE_SUCCESS) {
+            uint8_t* result = realloc(buffer, length);
+            if (result == NULL) {
+                free(buffer);
+                return -1;
+            }
+            *dest = result;
+            *destsize = length;
+            return 0;
+        } else if (result == LIBDEFLATE_INSUFFICIENT_SPACE) {
+            sizecur += sizestep;
+            free(buffer);
+            buffer = malloc(sizecur);
+            continue;
+        } else {
+            free(buffer);
+            return -1;
+        }
+    }
+}
+
+int LIBNBT_decompress_zlib(uint8_t** dest, size_t* destsize, uint8_t* src, size_t srcsize) {
+    struct libdeflate_decompressor * decompressor;
+    decompressor = libdeflate_alloc_decompressor();
+    size_t sizestep = 1 << 20;
+    size_t sizecur = sizestep;
+    uint8_t* buffer = malloc(sizecur);
+
+    enum libdeflate_result result;
+    size_t length;
+
+    while(1) {
+        result = libdeflate_zlib_decompress(decompressor, src, srcsize, buffer, sizecur, &length);
+        if (result == LIBDEFLATE_SUCCESS) {
+            uint8_t* result = realloc(buffer, length);
+            if (result == NULL) {
+                free(buffer);
+                return -1;
+            }
+            *dest = result;
+            *destsize = length;
+            return 0;
+        } else if (result == LIBDEFLATE_INSUFFICIENT_SPACE) {
+            sizecur += sizestep;
+            free(buffer);
+            buffer = malloc(sizecur);
+            continue;
+        } else {
+            free(buffer);
+            return -1;
+        }
+    }
+}
+
+int LIBNBT_compress_gzip(uint8_t* dest, size_t* destsize, uint8_t* src, size_t srcsize) {
+    struct libdeflate_compressor * compressor;
+    compressor = libdeflate_alloc_compressor(12);
+
+    size_t len;
+    len = libdeflate_gzip_compress(compressor, src, srcsize, dest, *destsize);
+
+    if (len == 0) return -1;
+    *destsize = len;
+    return 0;
+}
+
+int LIBNBT_compress_zlib(uint8_t* dest, size_t* destsize, uint8_t* src, size_t srcsize) {
+    struct libdeflate_compressor * compressor;
+    compressor = libdeflate_alloc_compressor(12);
+
+    size_t len;
+    len = libdeflate_zlib_compress(compressor, src, srcsize, dest, *destsize);
+
+    if (len == 0) return -1;
+    *destsize = len;
+    return 0;
+}
+
+#endif
 
 int NBT_toSNBT_Opt(NBT* root, char* buff, size_t* bufflen, int maxlevel, int space, NBT_Error* errid) {
     NBT_Buffer *buffer = LIBNBT_init_buffer((uint8_t*)buff, *bufflen);
@@ -838,7 +942,7 @@ NBT* NBT_Parse_Opt(uint8_t* data, size_t length, NBT_Error* errid) {
         size_t size;
         uint8_t* undata;
         int ret = LIBNBT_decompress_gzip(&undata, &size, data, length);
-        if (ret != Z_OK) {
+        if (ret != 0) {
             LIBNBT_fill_err(errid, ERROR_UNZIP_ERROR, 0);
             return NULL;
         }
@@ -848,7 +952,7 @@ NBT* NBT_Parse_Opt(uint8_t* data, size_t length, NBT_Error* errid) {
         size_t size;
         uint8_t* undata;
         int ret = LIBNBT_decompress_zlib(&undata, &size, data, length);
-        if (ret != Z_OK) {
+        if (ret != 0) {
             LIBNBT_fill_err(errid, ERROR_UNZIP_ERROR, 0);
             return NULL;
         }

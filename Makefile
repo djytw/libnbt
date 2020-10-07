@@ -1,6 +1,9 @@
 OBJDIR = build/
 TARGETDIR = target/
 
+ZLIB ?= ZLIB
+export ZLIB
+
 .PHONY : clean 
 
 all : example
