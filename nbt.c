@@ -58,6 +58,7 @@ typedef struct NBT_Buffer {
 #include <byteswap.h>
 #endif
 
+#ifndef _MSC_VER
 #define BUFFER_SPRINTF(buffer, str...) {                        \
     char* buf = (char*)&(buffer)->data[(buffer)->pos];          \
     int maxlen = (buffer)->len - (buffer)->pos;                 \
@@ -71,6 +72,22 @@ typedef struct NBT_Buffer {
         return ERROR_BUFFER_OVERFLOW;                           \
     }                                                           \
 }
+#else
+#define BUFFER_SPRINTF(buffer, str, ...) {                      \
+    char* buf = (char*)&(buffer)->data[(buffer)->pos];          \
+    int maxlen = (buffer)->len - (buffer)->pos;                 \
+    int writelen = snprintf(buf, maxlen, str, __VA_ARGS__);     \
+    (buffer)->pos += writelen;                                  \
+    maxlen -= writelen;                                         \
+    if ((writelen) == 0) {                                      \
+        return ERROR_INTERNAL;                                  \
+    }                                                           \
+    if ((maxlen) <= 0) {                                        \
+        return ERROR_BUFFER_OVERFLOW;                           \
+    }                                                           \
+}
+#endif
+
 
 NBT* LIBNBT_create_NBT(uint8_t type);
 NBT_Buffer* LIBNBT_init_buffer(uint8_t* data, int length);
