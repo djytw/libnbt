@@ -36,13 +36,13 @@ typedef enum NBT_Compression {
 } NBT_Compression;
 
 // Error code
-#define ERROR_MASK 0xf0000000
-#define ERROR_INTERNAL          (ERROR_MASK|0x1)  // Internal error, maybe a bug?
-#define ERROR_EARLY_EOF         (ERROR_MASK|0x2)  // An unexpected EOF was met, maybe the file is incomplete?
-#define ERROR_LEFTOVER_DATA     (ERROR_MASK|0x3)  // Extra data after it supposed to end, maybe the file is corrupted
-#define ERROR_INVALID_DATA      (ERROR_MASK|0x4)  // Invalid data detected, maybe the file is corrupted
-#define ERROR_BUFFER_OVERFLOW   (ERROR_MASK|0x5)  // The buffer you allocated is not enough, please use a larger buffer
-#define ERROR_UNZIP_ERROR       (ERROR_MASK|0x6)  // Occurs when the NBT file is compressed, but failed to decompress, the file is corrupted.
+#define LIBNBT_ERROR_MASK 0xf0000000
+#define LIBNBT_ERROR_INTERNAL          (LIBNBT_ERROR_MASK|0x1)  // Internal error, maybe a bug?
+#define LIBNBT_ERROR_EARLY_EOF         (LIBNBT_ERROR_MASK|0x2)  // An unexpected EOF was met, maybe the file is incomplete?
+#define LIBNBT_ERROR_LEFTOVER_DATA     (LIBNBT_ERROR_MASK|0x3)  // Extra data after it supposed to end, maybe the file is corrupted
+#define LIBNBT_ERROR_INVALID_DATA      (LIBNBT_ERROR_MASK|0x4)  // Invalid data detected, maybe the file is corrupted
+#define LIBNBT_ERROR_BUFFER_OVERFLOW   (LIBNBT_ERROR_MASK|0x5)  // The buffer you allocated is not enough, please use a larger buffer
+#define LIBNBT_ERROR_UNZIP_ERROR       (LIBNBT_ERROR_MASK|0x6)  // Occurs when the NBT file is compressed, but failed to decompress, the file is corrupted.
 
 // There's always 1024 (32*32) chunks in a region file
 #define CHUNKS_IN_REGION 1024
