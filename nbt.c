@@ -16,6 +16,7 @@
 
 #include "nbt.h"
 
+#include <inttypes.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -521,7 +522,7 @@ int LIBNBT_snbt_write_number(NBT_Buffer* buffer, uint64_t value, char* key, int 
         case TAG_Byte: BUFFER_SPRINTF(buffer, "%db,", (int8_t)value); break;
         case TAG_Short: BUFFER_SPRINTF(buffer, "%ds,", (int16_t)value); break;
         case TAG_Int: BUFFER_SPRINTF(buffer, "%d,", (int32_t)value); break;
-        case TAG_Long: BUFFER_SPRINTF(buffer, "%ldl,", (int64_t)value); break;
+        case TAG_Long: BUFFER_SPRINTF(buffer, "%" PRIi64 "l,", (int64_t)value); break;
         default: return LIBNBT_ERROR_INTERNAL;
     }
     return 0;
@@ -560,7 +561,7 @@ int LIBNBT_snbt_write_array(NBT_Buffer* buffer, void* value, int length, char* k
         switch(type) {
             case TAG_Byte_Array: BUFFER_SPRINTF(buffer, "%db,", ((int8_t*)value)[i]); break;
             case TAG_Int_Array: BUFFER_SPRINTF(buffer, "%d,", ((int32_t*)value)[i]); break;
-            case TAG_Long_Array: BUFFER_SPRINTF(buffer, "%ldl,", ((int64_t*)value)[i]); break;
+            case TAG_Long_Array: BUFFER_SPRINTF(buffer, "%" PRIi64 "l,", ((int64_t*)value)[i]); break;
             default: return LIBNBT_ERROR_INTERNAL;
         }
     }
