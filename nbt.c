@@ -998,6 +998,7 @@ NBT* NBT_Parse_Opt(uint8_t* data, size_t length, NBT_Error* errid) {
     if (ret != 0) {
         LIBNBT_fill_err(errid, ret, buffer->pos);
         NBT_Free(root);
+        free(buffer);
         return NULL;
     } else {
         if (buffer->pos != buffer->len) {
@@ -1005,6 +1006,7 @@ NBT* NBT_Parse_Opt(uint8_t* data, size_t length, NBT_Error* errid) {
         } else {
             LIBNBT_fill_err(errid, 0, buffer->pos);
         }
+        free(buffer);
         return root;
     }
 }
