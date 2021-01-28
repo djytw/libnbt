@@ -834,6 +834,7 @@ int LIBNBT_decompress_gzip(uint8_t** dest, size_t* destsize, uint8_t* src, size_
     while(1) {
         result = libdeflate_gzip_decompress(decompressor, src, srcsize, buffer, sizecur, &length);
         if (result == LIBDEFLATE_SUCCESS) {
+            libdeflate_free_decompressor(decompressor);
             uint8_t* result = realloc(buffer, length);
             if (result == NULL) {
                 free(buffer);
@@ -849,6 +850,7 @@ int LIBNBT_decompress_gzip(uint8_t** dest, size_t* destsize, uint8_t* src, size_
             continue;
         } else {
             free(buffer);
+            libdeflate_free_decompressor(decompressor);
             return -1;
         }
     }
@@ -867,6 +869,7 @@ int LIBNBT_decompress_zlib(uint8_t** dest, size_t* destsize, uint8_t* src, size_
     while(1) {
         result = libdeflate_zlib_decompress(decompressor, src, srcsize, buffer, sizecur, &length);
         if (result == LIBDEFLATE_SUCCESS) {
+            libdeflate_free_decompressor(decompressor);
             uint8_t* result = realloc(buffer, length);
             if (result == NULL) {
                 free(buffer);
@@ -882,6 +885,7 @@ int LIBNBT_decompress_zlib(uint8_t** dest, size_t* destsize, uint8_t* src, size_
             continue;
         } else {
             free(buffer);
+            libdeflate_free_decompressor(decompressor);
             return -1;
         }
     }
@@ -893,6 +897,7 @@ int LIBNBT_compress_gzip(uint8_t* dest, size_t* destsize, uint8_t* src, size_t s
 
     size_t len;
     len = libdeflate_gzip_compress(compressor, src, srcsize, dest, *destsize);
+    libdeflate_free_compressor(compressor);
 
     if (len == 0) return -1;
     *destsize = len;
@@ -905,6 +910,7 @@ int LIBNBT_compress_zlib(uint8_t* dest, size_t* destsize, uint8_t* src, size_t s
 
     size_t len;
     len = libdeflate_zlib_compress(compressor, src, srcsize, dest, *destsize);
+    libdeflate_free_compressor(compressor);
 
     if (len == 0) return -1;
     *destsize = len;
