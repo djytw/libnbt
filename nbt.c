@@ -1023,6 +1023,7 @@ void NBT_Free(NBT* root) {
         case TAG_Byte_Array:
         case TAG_Long_Array:
         case TAG_Int_Array:
+        case TAG_String:
         if (root->value_a.value != NULL) {
             free(root->value_a.value);
         }
