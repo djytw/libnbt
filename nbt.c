@@ -1550,6 +1550,12 @@ int MCA_WriteRaw_File(FILE* fp, MCA* mca) {
     for (i = 0; i < CHUNKS_IN_REGION; i ++) {
         fwrite(tbuf, 4, 1, fp);
     }
+    fseek(fp, 0, SEEK_END);
+    int64_t length;
+    if((length = ftell(fp)) % 4096) {   // Adds padding for file if it doesn't allign with a multiple of 4096 bytes by itself
+        fseek(fp, (((length >> 12) + 1) << 12) - 1, SEEK_SET);
+        fputc(0, fp);
+    }
     fflush(fp);
     return 0;
 }
