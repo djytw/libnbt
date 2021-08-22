@@ -1537,10 +1537,6 @@ int MCA_WriteRaw_File(FILE* fp, MCA* mca) {
         int newpos = (ftell(fp) >> 12) + 1;
         offsets[i] |= (newpos - current) & 0xff;
         current = newpos;
-        if((5 + size - 1) % 4096) {   // Adds padding for chunk if the chunk doesn't allign with a multiple of 4096 bytes by itself (only relevant for last chunk in regionfile)
-            fseek(fp, (((offsets[i] >> 8) + (offsets[i] & 0xFF)) << 12) - 1, SEEK_SET);
-            fputc(0, fp);
-        }
     }
     fseek(fp, 0, SEEK_SET);
     for (i = 0; i < CHUNKS_IN_REGION; i ++) {
@@ -1553,6 +1549,12 @@ int MCA_WriteRaw_File(FILE* fp, MCA* mca) {
     uint8_t* tbuf = (uint8_t*)&t;
     for (i = 0; i < CHUNKS_IN_REGION; i ++) {
         fwrite(tbuf, 4, 1, fp);
+    }
+    fseek(fp, 0, SEEK_END);
+    int64_t length;
+    if((length = ftell(fp)) % 4096) {   // Adds padding for file if it doesn't allign with a multiple of 4096 bytes by itself
+        fseek(fp, (((length >> 12) + 1) << 12) - 1, SEEK_SET);
+        fputc(0, fp);
     }
     fflush(fp);
     return 0;
