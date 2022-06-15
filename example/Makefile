@@ -3,12 +3,13 @@ TARGETDIR = ../target/
 objects = $(patsubst %.c,$(TARGETDIR)%,$(wildcard *.c))
 
 ifeq ($(ZLIB), LIBDEFLATE)
-LIBS = deflate
+LIBS = 
+STATIC_LIBS = ../libdeflate/libdeflate.a
 CFLAGS = -Wall -g -DLIBNBT_USE_LIBDEFLATE 
-LIBRARY = ../libdeflate/ .
-all : $(objects) copylibrary
+all : $(objects)
 else
 LIBS = z
+STATIC_LIBS = 
 CFLAGS = -Wall -g 
 LIBRARY = .
 all : $(objects)
@@ -18,7 +19,4 @@ CC = gcc
 
 $(objects) : $(TARGETDIR)% : %.c ../nbt.c
 	@mkdir -p $(TARGETDIR)
-	$(CC) $< ../nbt.c -o $@ $(CFLAGS) $(patsubst %,-l%,$(LIBS)) $(patsubst %,-L%,$(LIBRARY)) -I..
-
-copylibrary :
-	cp ../libdeflate/libdeflate.so* ../target/
+	$(CC) $< ../nbt.c $(STATIC_LIBS) -o $@ $(CFLAGS) $(patsubst %,-l%,$(LIBS)) $(patsubst %,-L%,$(LIBRARY)) -I..

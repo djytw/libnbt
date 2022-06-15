@@ -57,7 +57,7 @@ int main(int argc, char** argv) {
         // translate to SNBT
         int ret = NBT_toSNBT_Opt(root, output, &bufferlength, maxlevel, space, &error);
         printf("%s\nLength=%ld\n", output, bufferlength);
-        if (ret && error.errid == ERROR_BUFFER_OVERFLOW) {
+        if (ret && error.errid == LIBNBT_ERROR_BUFFER_OVERFLOW) {
             printf("buffer not enough!\n");
         }
 
@@ -75,7 +75,6 @@ int main(int argc, char** argv) {
     }
 
     free(data);
-    fclose(fp);
     fclose(fp2);
 
     return 0;
