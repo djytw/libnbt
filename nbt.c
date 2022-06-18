@@ -955,9 +955,11 @@ NBT* NBT_GetChild_Deep(NBT* root, ...) {
     while ((temp = va_arg(va, char*)) != NULL) {
         current = NBT_GetChild(current, temp);
         if (current == NULL) {
+            va_end(va);
             return NULL;
         }
     }
+    va_end(va);
     return current;
 }
 
