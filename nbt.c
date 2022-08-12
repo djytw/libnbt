@@ -811,7 +811,11 @@ int LIBNBT_compress_gzip(uint8_t* dest, size_t* destsize, uint8_t* src, size_t s
     if (deflateInit2(&strm, Z_BEST_COMPRESSION, Z_DEFLATED, 15 | 16, 8, Z_DEFAULT_STRATEGY) < 0) {
         return -1;
     }
-    if (deflate(&strm, Z_FINISH) < 0) {
+    // If return Z_OK (0), it would also need more space
+    // Refer to zlib.h, if not enough space, deflate() should be called until error encounter
+    // or when it's Z_STREAM_END (1)
+    if ( deflate(&strm, Z_FINISH) <= 0 ) {
+        deflateEnd(&strm);
         return -1;
     }
     deflateEnd(&strm);
@@ -1283,18 +1287,22 @@ int NBT_Pack_Opt(NBT* root, uint8_t* buffer, size_t* length, NBT_Compression com
     
     if (compression == NBT_Compression_NONE) {
         *length = buf->pos;
+        free(buf);
         return ret;
     } else {
         if (ret != 0) {
+            free(buf);
             return ret;
         }
         if (compression == NBT_Compression_GZIP) {
             ret = LIBNBT_compress_gzip(buffer, length, buf->data, buf->pos);
             free(buf->data);
+            free(buf);
             return ret;
         } else {
             ret = LIBNBT_compress_zlib(buffer, length, buf->data, buf->pos);
             free(buf->data);
+            free(buf);
             return ret;
         }
     }
